@@ -34,12 +34,6 @@ TEST(node_matches, expr_shorter_than_path) {
   assert_int_equal(node_matches("s", "path"), (uchar)-1);
 }
 
-TEST(node_count, relative_space) { assert_int_equal(node_count("p r"), 2); }
-TEST(node_count, relative_slash) { assert_int_equal(node_count("p/r"), 2); }
-TEST(node_count, absolute) { assert_int_equal(node_count("/p"), 1); }
-TEST(node_count, root) { assert_int_equal(node_count("/"), 0); }
-TEST(node_count, suffix_slash) { assert_int_equal(node_count("p/"), 1); }
-
 SETUP(matches) {
   *state = malloc(2 * sizeof(uchar));
   return 0;
@@ -119,11 +113,6 @@ int main(void) {
     ADD(equal, lower),
     ADD(equal, upper),
     ADD(equal, symbol),
-    ADD(node_count, relative_space),
-    ADD(node_count, relative_slash),
-    ADD(node_count, absolute),
-    ADD(node_count, root),
-    ADD(node_count, suffix_slash),
     ADD(node_matches, suffix),
     ADD(node_matches, prefix),
     ADD(node_matches, infix),

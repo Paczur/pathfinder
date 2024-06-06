@@ -30,15 +30,6 @@ static uchar node_matches(const char *expr, const char *str) {
   return -1;
 }
 
-uchar node_count(const char *expr) {
-  uchar counter = 1;
-  if(!expr[1]) return expr[0] != '/';
-  for(size_t i = 1; expr[i + 1]; i++) {
-    if(expr[i] == '/' || expr[i] == ' ') counter++;
-  }
-  return counter;
-}
-
 bool matches(const char *expr, const char *str, uchar *node_is) {
   uchar match = 255;
   size_t node_i = 0;
