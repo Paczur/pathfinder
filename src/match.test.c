@@ -16,18 +16,22 @@ TEST(equal, lower) { assert_true(equal('A', 'a')); }
 TEST(equal, upper) { assert_true(equal('a', 'A')); }
 TEST(equal, symbol) { assert_false(equal('~', '^')); }
 
-TEST(node_matches, prefix) { assert_true(node_matches("pr", "pre")); }
-TEST(node_matches, suffix) { assert_true(node_matches("pr", "epr")); }
-TEST(node_matches, infix) { assert_true(node_matches("pr", "epre")); }
-TEST(node_matches, exact) { assert_true(node_matches("pr", "pr")); }
+TEST(node_matches, prefix) { assert_int_equal(node_matches("pr", "pre"), 0); }
+TEST(node_matches, suffix) { assert_int_equal(node_matches("pr", "epr"), 1); }
+TEST(node_matches, infix) { assert_int_equal(node_matches("pr", "epre"), 1); }
+TEST(node_matches, exact) { assert_int_equal(node_matches("pr", "pr"), 0); }
 TEST(node_matches, prefix_repetition) {
-  assert_true(node_matches("pr", "ppr"));
+  assert_int_equal(node_matches("pr", "ppr"), 1);
 }
-TEST(node_matches, case) { assert_true(node_matches("PR", "pr")); }
-TEST(node_matches, slash) { assert_true(node_matches("pr/test", "pr")); }
-TEST(node_matches, space) { assert_true(node_matches("pr test2", "pr")); }
+TEST(node_matches, case) { assert_int_equal(node_matches("PR", "pr"), 0); }
+TEST(node_matches, slash) {
+  assert_int_equal(node_matches("pr/test", "pr"), 0);
+}
+TEST(node_matches, space) {
+  assert_int_equal(node_matches("pr test2", "pr"), 0);
+}
 TEST(node_matches, expr_shorter_than_path) {
-  assert_false(node_matches("s", "path"));
+  assert_int_equal(node_matches("s", "path"), (uchar)-1);
 }
 
 TEST(node_count, relative_space) { assert_int_equal(node_count("p r"), 2); }
@@ -55,15 +59,42 @@ TEST(matches, space_indirect) {
 TEST(matches, space_false) {
   assert_false(matches("p r", "projects/no/luck", NULL));
 }
-TEST(matches, slash) { assert_true(matches("p/r", "projects/real", NULL)); }
+TEST(matches, slash) {
+  uchar *ranges = *state;
+  assert_true(matches("p/r", "projects/real", ranges));
+  assert_true(ranges[0] == 0);
+  assert_true(ranges[1] == 9);
+}
 TEST(matches, first_false) { assert_false(matches("pr", "test", NULL)); }
 TEST(matches, slash_false) {
   assert_false(matches("p/r", "projects/no", NULL));
 }
-TEST(matches, absolute) { assert_true(matches("/p", "/rp", NULL)); }
-TEST(matches, second) { assert_true(matches("p", "test/project", NULL)); }
+TEST(matches, middle) {
+  uchar *ranges = *state;
+  assert_true(matches("e", "project/test", NULL));
+  assert_true(ranges[0] == 4);
+}
+TEST(matches, absolute) {
+  uchar *ranges = *state;
+  assert_true(matches("/p", "/rp", NULL));
+  assert_true(ranges[0] == 2);
+}
+TEST(matches, absolute_middle) {
+  uchar *ranges = *state;
+  assert_true(matches("/p s", "/rp/test", NULL));
+  assert_true(ranges[0] == 2);
+  assert_true(ranges[1] == 6);
+}
+TEST(matches, absolute_false) { assert_false(matches("/p", "/test", NULL)); }
+TEST(matches, second) {
+  uchar *ranges = *state;
+  assert_true(matches("p", "test/project", NULL));
+  assert_true(ranges[0] == 5);
+}
 TEST(matches, absolute_indirect) {
+  uchar *ranges = *state;
   assert_true(matches("p", "test/lol/pro", NULL));
+  assert_true(ranges[0] == 9);
 }
 TEARDOWN(matches) {
   free(*state);
@@ -104,7 +135,8 @@ int main(void) {
     ADD(matches, space_false),       ADD(matches, slash),
     ADD(matches, first_false),       ADD(matches, slash_false),
     ADD(matches, absolute),          ADD(matches, second),
-    ADD(matches, absolute_indirect),
+    ADD(matches, absolute_indirect), ADD(matches, middle),
+    ADD(matches, absolute_middle),   ADD(matches, absolute_false),
   };
   return cmocka_run_group_tests(tests, NULL, NULL) ||
          cmocka_run_group_tests(matches_tests, matches_test_setup,

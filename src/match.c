@@ -15,21 +15,19 @@ static bool equal(char c1, char c2) {
   return (letter(c1) ? uppercase(c1) : c1) == (letter(c2) ? uppercase(c2) : c2);
 }
 
-static bool node_matches(const char *expr, const char *str) {
+static uchar node_matches(const char *expr, const char *str) {
   size_t expr_i = 0;
   size_t i = 0;
   for(; str[i] && str[i] != '/'; i++) {
     if(equal(str[i], expr[expr_i])) {
       expr_i++;
       if(!expr[expr_i] || expr[expr_i] == ' ' || expr[expr_i] == '/')
-        return true;
+        return i - expr_i + 1;
     } else if(expr_i > 0) {
       expr_i = equal(str[i], expr[0]) ? 1 : 0;
     }
   }
-  return expr[expr_i] == str[i] &&
-         (!expr[expr_i + 1] || expr[expr_i + 1] == ' ' ||
-          expr[expr_i + 1] == '/');
+  return -1;
 }
 
 uchar node_count(const char *expr) {
@@ -42,18 +40,22 @@ uchar node_count(const char *expr) {
 }
 
 bool matches(const char *expr, const char *str, uchar *node_is) {
-  bool match = false;
+  uchar match = 255;
   bool space = expr[0] != '/';
-  size_t str_i = 0;
-  match = node_matches(expr, str);
-  if(!match) {
+  size_t str_i = !space;
+  size_t i = !space;
+  size_t node_i = 0;
+  match = node_matches(expr + i, str);
+  if(match == 255) {
     for(; str[str_i]; str_i++) {
       if(str[str_i - 1] != '/') continue;
-      match = node_matches(expr, str + str_i);
-      if(match) break;
+      match = node_matches(expr + i, str + str_i);
+      if(match != 255) break;
     }
   }
-  for(size_t i = 1; expr[i]; i++) {
+  if(match == 255) return false;
+  if(node_is) node_is[node_i++] = match + str_i;
+  for(; expr[i]; i++) {
     if(expr[i] != ' ' && expr[i] != '/') continue;
     while(str[str_i] && str[str_i] != '/') str_i++;
     if(!str[str_i] || !str[str_i + 1]) return false;
@@ -61,13 +63,19 @@ bool matches(const char *expr, const char *str, uchar *node_is) {
     i++;
     str_i++;
     match = node_matches(expr + i, str + str_i);
-    if(!space && !match) return false;
-    if(!space) continue;
+    if(!space && match == 255) return false;
+    if(!space) {
+      if(node_is) node_is[node_i++] = match + str_i;
+      continue;
+    }
     for(; str[str_i]; str_i++) {
       if(str[str_i - 1] != '/') continue;
       match = node_matches(expr + i, str + str_i);
-      if(match) break;
+      if(match != 255) {
+        if(node_is) node_is[node_i++] = match + str_i;
+        break;
+      }
     }
   }
-  return !space || match;
+  return !space || match != 255;
 }
