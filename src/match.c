@@ -1,5 +1,6 @@
 #include "match.h"
 #include <assert.h>
+#include <stdlib.h>
 
 static bool letter(char c) {
   return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
@@ -31,12 +32,28 @@ static bool node_matches(const char *expr, const char *str) {
           expr[expr_i + 1] == '/');
 }
 
-bool matches(const char *expr, const char *str) {
+uchar node_count(const char *expr) {
+  uchar counter = 1;
+  if(!expr[1]) return expr[0] != '/';
+  for(size_t i = 1; expr[i + 1]; i++) {
+    if(expr[i] == '/' || expr[i] == ' ') counter++;
+  }
+  return counter;
+}
+
+bool matches(const char *expr, const char *str, uchar *node_is) {
   bool match = false;
-  bool space = true;
+  bool space = expr[0] != '/';
   size_t str_i = 0;
-  if(!node_matches(expr, str)) return false;
-  for(size_t i = 0; expr[i]; i++) {
+  match = node_matches(expr, str);
+  if(!match) {
+    for(; str[str_i]; str_i++) {
+      if(str[str_i - 1] != '/') continue;
+      match = node_matches(expr, str + str_i);
+      if(match) break;
+    }
+  }
+  for(size_t i = 1; expr[i]; i++) {
     if(expr[i] != ' ' && expr[i] != '/') continue;
     while(str[str_i] && str[str_i] != '/') str_i++;
     if(!str[str_i] || !str[str_i + 1]) return false;

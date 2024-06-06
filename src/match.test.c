@@ -30,13 +30,45 @@ TEST(node_matches, expr_shorter_than_path) {
   assert_false(node_matches("s", "path"));
 }
 
-TEST(matches, space_direct) { assert_true(matches("p r", "projects/real")); }
-TEST(matches, space_indirect) {
-  assert_true(matches("p r", "projects/no/real"));
+TEST(node_count, relative_space) { assert_int_equal(node_count("p r"), 2); }
+TEST(node_count, relative_slash) { assert_int_equal(node_count("p/r"), 2); }
+TEST(node_count, absolute) { assert_int_equal(node_count("/p"), 1); }
+TEST(node_count, root) { assert_int_equal(node_count("/"), 0); }
+TEST(node_count, suffix_slash) { assert_int_equal(node_count("p/"), 1); }
+
+SETUP(matches) {
+  *state = malloc(2 * sizeof(uchar));
+  return 0;
 }
-TEST(matches, space_false) { assert_false(matches("p r", "projects/no/luck")); }
-TEST(matches, slash) { assert_true(matches("p/r", "projects/real")); }
-TEST(matches, slash_false) { assert_false(matches("p/r", "projects/no")); }
+TEST(matches, space_direct) {
+  uchar *ranges = *state;
+  assert_true(matches("p r", "projects/real", ranges));
+  assert_true(ranges[0] == 0);
+  assert_true(ranges[1] == 9);
+}
+TEST(matches, space_indirect) {
+  uchar *ranges = *state;
+  assert_true(matches("p r", "projects/no/real", ranges));
+  assert_true(ranges[0] == 0);
+  assert_true(ranges[1] == 12);
+}
+TEST(matches, space_false) {
+  assert_false(matches("p r", "projects/no/luck", NULL));
+}
+TEST(matches, slash) { assert_true(matches("p/r", "projects/real", NULL)); }
+TEST(matches, first_false) { assert_false(matches("pr", "test", NULL)); }
+TEST(matches, slash_false) {
+  assert_false(matches("p/r", "projects/no", NULL));
+}
+TEST(matches, absolute) { assert_true(matches("/p", "/rp", NULL)); }
+TEST(matches, second) { assert_true(matches("p", "test/project", NULL)); }
+TEST(matches, absolute_indirect) {
+  assert_true(matches("p", "test/lol/pro", NULL));
+}
+TEARDOWN(matches) {
+  free(*state);
+  return 0;
+}
 
 int main(void) {
   const struct CMUnitTest tests[] = {
@@ -52,6 +84,11 @@ int main(void) {
     ADD(equal, lower),
     ADD(equal, upper),
     ADD(equal, symbol),
+    ADD(node_count, relative_space),
+    ADD(node_count, relative_slash),
+    ADD(node_count, absolute),
+    ADD(node_count, root),
+    ADD(node_count, suffix_slash),
     ADD(node_matches, suffix),
     ADD(node_matches, prefix),
     ADD(node_matches, infix),
@@ -61,11 +98,15 @@ int main(void) {
     ADD(node_matches, slash),
     ADD(node_matches, space),
     ADD(node_matches, expr_shorter_than_path),
-    ADD(matches, space_direct),
-    ADD(matches, space_indirect),
-    ADD(matches, space_false),
-    ADD(matches, slash),
-    ADD(matches, slash_false),
   };
-  return cmocka_run_group_tests(tests, NULL, NULL);
+  const struct CMUnitTest matches_tests[] = {
+    ADD(matches, space_direct),      ADD(matches, space_indirect),
+    ADD(matches, space_false),       ADD(matches, slash),
+    ADD(matches, first_false),       ADD(matches, slash_false),
+    ADD(matches, absolute),          ADD(matches, second),
+    ADD(matches, absolute_indirect),
+  };
+  return cmocka_run_group_tests(tests, NULL, NULL) ||
+         cmocka_run_group_tests(matches_tests, matches_test_setup,
+                                matches_test_teardown);
 }
