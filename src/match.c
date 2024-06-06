@@ -41,12 +41,22 @@ uchar node_count(const char *expr) {
 
 bool matches(const char *expr, const char *str, uchar *node_is) {
   uchar match = 255;
-  bool space = expr[0] != '/';
-  size_t str_i = !space;
-  size_t i = !space;
   size_t node_i = 0;
-  match = node_matches(expr + i, str);
-  if(match == 255) {
+  bool space = true;
+  size_t str_i = 0;
+  size_t i = 0;
+  if(expr[0] == '/') {
+    if(str[0] != '/') return false;
+    str_i++;
+    i++;
+    space = false;
+    if(expr[1] == ' ') {
+      space = true;
+      i++;
+    }
+  }
+  match = node_matches(expr + i, str + str_i);
+  if(space && match == 255) {
     for(; str[str_i]; str_i++) {
       if(str[str_i - 1] != '/') continue;
       match = node_matches(expr + i, str + str_i);
@@ -76,6 +86,17 @@ bool matches(const char *expr, const char *str, uchar *node_is) {
         break;
       }
     }
+  }
+  if(node_is) {
+    if(match != 255) {
+      node_is[node_i++] = match + str_i;
+      return true;
+    }
+    if(!space) {
+      node_is[node_i++] = str_i - i;
+      return true;
+    }
+    return false;
   }
   return !space || match != 255;
 }

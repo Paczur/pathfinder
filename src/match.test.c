@@ -47,14 +47,14 @@ SETUP(matches) {
 TEST(matches, space_direct) {
   uchar *ranges = *state;
   assert_true(matches("p r", "projects/real", ranges));
-  assert_true(ranges[0] == 0);
-  assert_true(ranges[1] == 9);
+  assert_int_equal(ranges[0], 0);
+  assert_int_equal(ranges[1], 9);
 }
 TEST(matches, space_indirect) {
   uchar *ranges = *state;
   assert_true(matches("p r", "projects/no/real", ranges));
-  assert_true(ranges[0] == 0);
-  assert_true(ranges[1] == 12);
+  assert_int_equal(ranges[0], 0);
+  assert_int_equal(ranges[1], 12);
 }
 TEST(matches, space_false) {
   assert_false(matches("p r", "projects/no/luck", NULL));
@@ -62,8 +62,8 @@ TEST(matches, space_false) {
 TEST(matches, slash) {
   uchar *ranges = *state;
   assert_true(matches("p/r", "projects/real", ranges));
-  assert_true(ranges[0] == 0);
-  assert_true(ranges[1] == 9);
+  assert_int_equal(ranges[0], 0);
+  assert_int_equal(ranges[1], 9);
 }
 TEST(matches, first_false) { assert_false(matches("pr", "test", NULL)); }
 TEST(matches, slash_false) {
@@ -71,31 +71,35 @@ TEST(matches, slash_false) {
 }
 TEST(matches, middle) {
   uchar *ranges = *state;
-  assert_true(matches("e", "project/test", NULL));
-  assert_true(ranges[0] == 4);
+  assert_true(matches("e", "project/test", ranges));
+  assert_int_equal(ranges[0], 4);
 }
 TEST(matches, absolute) {
   uchar *ranges = *state;
-  assert_true(matches("/p", "/rp", NULL));
-  assert_true(ranges[0] == 2);
+  assert_true(matches("/p", "/rp", ranges));
+  assert_int_equal(ranges[0], 2);
 }
 TEST(matches, absolute_middle) {
   uchar *ranges = *state;
-  assert_true(matches("/p s", "/rp/test", NULL));
-  assert_true(ranges[0] == 2);
-  assert_true(ranges[1] == 6);
+  assert_true(matches("/p s", "/rp/test", ranges));
+  assert_int_equal(ranges[0], 2);
+  assert_int_equal(ranges[1], 6);
 }
 TEST(matches, absolute_false) { assert_false(matches("/p", "/test", NULL)); }
 TEST(matches, second) {
   uchar *ranges = *state;
-  assert_true(matches("p", "test/project", NULL));
-  assert_true(ranges[0] == 5);
+  assert_true(matches("p", "test/project", ranges));
+  assert_int_equal(ranges[0], 5);
 }
 TEST(matches, absolute_indirect) {
-  uchar *ranges = *state;
-  assert_true(matches("p", "test/lol/pro", NULL));
-  assert_true(ranges[0] == 9);
+  assert_false(matches("/p", "/test/pro", NULL));
 }
+TEST(matches, absolute_space) {
+  uchar *ranges = *state;
+  assert_true(matches("/ p", "/test/pro", ranges));
+  assert_int_equal(ranges[0], 6);
+}
+TEST(matches, absolute_relative) { assert_false(matches("/p", "pr", NULL)); }
 TEARDOWN(matches) {
   free(*state);
   return 0;
@@ -137,6 +141,7 @@ int main(void) {
     ADD(matches, absolute),          ADD(matches, second),
     ADD(matches, absolute_indirect), ADD(matches, middle),
     ADD(matches, absolute_middle),   ADD(matches, absolute_false),
+    ADD(matches, absolute_space),    ADD(matches, absolute_relative),
   };
   return cmocka_run_group_tests(tests, NULL, NULL) ||
          cmocka_run_group_tests(matches_tests, matches_test_setup,
