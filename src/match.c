@@ -1,5 +1,4 @@
 #include "match.h"
-#include <stddef.h>
 #include <assert.h>
 
 static bool letter(char c) {
