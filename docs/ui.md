@@ -20,9 +20,7 @@
 pf [OPTIONS] path [path...]
 
 Example:
-pf foo bar - find bar (in)directly is inside foo
+pf foo bar - find bar (in)directly inside foo
 pf foo/bar - find bar directly inside foo
 pf / foo - find foo (in)directly in root
 pf /foo - find foo directly in root
-pf ~ foo - find foo (in)directly in $HOME
-pf ~/foo - find foo directly in $HOME
