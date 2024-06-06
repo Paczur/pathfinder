@@ -39,7 +39,7 @@ release: CFLAGS += $(RELEASE)
 release: binaries
 
 debug: CFLAGS += $(DEBUG)
-debug: check binaries
+debug: tests binaries
 
 check: tests
 check:
@@ -59,6 +59,7 @@ $(BIN)/pathfinder: $(OBJECTS) | $(BIN)
 
 $(TEST_DIR)/%.test: $(SRC)/%.test.c $(SRC)/%.c | $(TEST_DIR)
 	$(CC) $(CFLAGS) $(NO_WARN_TESTS) -o $@ $<
+	./$@
 
 $(BUILD)/%.o: $(SRC)/%.c | $(BUILD)
 	$(CC) $(CFLAGS) -MMD -MP -c -o $@ $<
