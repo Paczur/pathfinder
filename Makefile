@@ -21,7 +21,7 @@ DEPENDS=$(patsubst $(SRC)/%.c,$(BUILD)/%.d,$(SOURCES))
 export CCACHE_DIR := ccache
 CC=ccache gcc
 
-all: check release
+all: release
 
 $(shell mkdir -p $(dir $(DEPENDS)))
 -include $(DEPENDS)
@@ -43,7 +43,9 @@ debug: check binaries
 
 check: tests
 check:
-	$(foreach bin,$(BIN_TESTS),./$(bin))
+	for bin in $(BIN_TESTS); do \
+		./$$bin; \
+	done \
 
 clean:
 	rm -rf $(BIN) $(BUILD) $(CCACHE_DIR)
