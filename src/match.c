@@ -1,4 +1,4 @@
-#include <stdbool.h>
+#include "match.h"
 #include <stddef.h>
 #include <assert.h>
 
@@ -33,17 +33,25 @@ static bool node_matches(const char *expr, const char *str) {
 }
 
 bool matches(const char *expr, const char *str) {
+  bool match = false;
+  bool space = true;
   size_t str_i = 0;
   if(!node_matches(expr, str)) return false;
   for(size_t i = 0; expr[i]; i++) {
-    if(expr[i] == ' ' || expr[i] == '/') {
-      while(str[str_i] && str[str_i] != '/') str_i++;
-      if(!str[str_i] || !str[str_i + 1]) return false;
-      i++;
-      str_i++;
-      printf("%s %s\n", expr + i, str + str_i);
-      if(!node_matches(expr + i, str + str_i)) return false;
+    if(expr[i] != ' ' && expr[i] != '/') continue;
+    while(str[str_i] && str[str_i] != '/') str_i++;
+    if(!str[str_i] || !str[str_i + 1]) return false;
+    space = expr[i] == ' ';
+    i++;
+    str_i++;
+    match = node_matches(expr + i, str + str_i);
+    if(!space && !match) return false;
+    if(!space) continue;
+    for(; str[str_i]; str_i++) {
+      if(str[str_i - 1] != '/') continue;
+      match = node_matches(expr + i, str + str_i);
+      if(match) break;
     }
   }
-  return true;
+  return !space || match;
 }

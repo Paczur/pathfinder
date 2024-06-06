@@ -1,13 +1,5 @@
 #include "match.c"
-
-#include <setjmp.h>
-#include <stdarg.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <cmocka.h>
-
-#define TEST(function, case) static void function##_test_##case(void **state)
-#define ADD(function, case) cmocka_unit_test(function##_test_##case)
+#include "test.h"
 
 TEST(letter, a) { assert_true(letter('a')); }
 TEST(letter, z) { assert_true(letter('z')); }
@@ -39,13 +31,12 @@ TEST(node_matches, expr_shorter_than_path) {
 }
 
 TEST(matches, space_direct) { assert_true(matches("p r", "projects/real")); }
-TEST(matches, slash) { assert_true(matches("p/r", "projects/real")); }
 TEST(matches, space_indirect) {
-  assert_true(matches("p r", "projects/shit/real"));
+  assert_true(matches("p r", "projects/no/real"));
 }
-TEST(matches, space_false) {
-  assert_false(matches("p r", "projects/shit/fuck"));
-}
+TEST(matches, space_false) { assert_false(matches("p r", "projects/no/luck")); }
+TEST(matches, slash) { assert_true(matches("p/r", "projects/real")); }
+TEST(matches, slash_false) { assert_false(matches("p/r", "projects/no")); }
 
 int main(void) {
   const struct CMUnitTest tests[] = {
@@ -72,8 +63,9 @@ int main(void) {
     ADD(node_matches, expr_shorter_than_path),
     ADD(matches, space_direct),
     ADD(matches, space_indirect),
-    ADD(matches, slash),
     ADD(matches, space_false),
+    ADD(matches, slash),
+    ADD(matches, slash_false),
   };
   return cmocka_run_group_tests(tests, NULL, NULL);
 }
