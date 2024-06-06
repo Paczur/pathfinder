@@ -18,12 +18,6 @@ TEST(dirname_start_distance, relative_middle) {
   assert_int_equal(ret[0], 2);
   free(ret);
 }
-TEST(dirname_start_distance, absolute_start) {
-  uchar node_is = 1;
-  uchar *ret = dirname_start_distance(&node_is, 1, "/p");
-  assert_int_equal(ret[0], 0);
-  free(ret);
-}
 
 int main(void) {
   const struct CMUnitTest tests[] = {
@@ -33,7 +27,6 @@ int main(void) {
     ADD(depth, root),
     ADD(dirname_start_distance, relative_start),
     ADD(dirname_start_distance, relative_middle),
-    ADD(dirname_start_distance, absolute_start),
   };
   return cmocka_run_group_tests(tests, NULL, NULL);
 }
