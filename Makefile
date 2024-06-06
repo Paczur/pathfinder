@@ -55,7 +55,7 @@ binaries: $(BIN)/pathfinder
 tests: $(BIN_TESTS)
 
 $(BIN)/pathfinder: $(OBJECTS) | $(BIN)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -MMD -MP -o $@ $^
 
 $(TEST_DIR)/%.test: $(SRC)/%.test.c $(SRC)/%.c | $(TEST_DIR)
 	$(CC) $(CFLAGS) $(NO_WARN_TESTS) -o $@ $<
