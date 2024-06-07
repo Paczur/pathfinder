@@ -16,87 +16,51 @@ TEST(equal, lower) { assert_true(equal('A', 'a')); }
 TEST(equal, upper) { assert_true(equal('a', 'A')); }
 TEST(equal, symbol) { assert_false(equal('~', '^')); }
 
-TEST(node_matches, prefix) { assert_int_equal(node_matches("pr", "pre"), 0); }
-TEST(node_matches, suffix) { assert_int_equal(node_matches("pr", "epr"), 1); }
-TEST(node_matches, infix) { assert_int_equal(node_matches("pr", "epre"), 1); }
-TEST(node_matches, exact) { assert_int_equal(node_matches("pr", "pr"), 0); }
-TEST(node_matches, prefix_repetition) {
-  assert_int_equal(node_matches("pr", "ppr"), 1);
-}
-TEST(node_matches, case) { assert_int_equal(node_matches("PR", "pr"), 0); }
-TEST(node_matches, slash) {
-  assert_int_equal(node_matches("pr/test", "pr"), 0);
-}
-TEST(node_matches, space) {
-  assert_int_equal(node_matches("pr test2", "pr"), 0);
-}
+#define TEST_NODE_MATCHES(name, expr, str, ...)     \
+  TEST(node_matches, name) {                        \
+    uchar res[] = {__VA_ARGS__};                    \
+    uchar range[sizeof(res)];                       \
+    assert_true(node_matches(expr, str, range));    \
+    assert_memory_equal(range, res, sizeof(range)); \
+  }
+TEST_NODE_MATCHES(prefix, "pr", "epr", 1, 3)
+TEST_NODE_MATCHES(suffix, "pr", "epr", 1, 3)
+TEST_NODE_MATCHES(infix, "pr", "epre", 1, 3)
+TEST_NODE_MATCHES(exact, "pr", "pr", 0, 2)
+TEST_NODE_MATCHES(prefix_repetition, "pr", "ppr", 1, 3)
+TEST_NODE_MATCHES(case, "PR", "pr", 0, 2);
+TEST_NODE_MATCHES(slash, "pr/test", "pr", 0, 2)
+TEST_NODE_MATCHES(space, "pr test2", "pr", 0, 2)
 TEST(node_matches, expr_shorter_than_path) {
-  assert_int_equal(node_matches("s", "path"), (uchar)-1);
+  assert_false(node_matches("s", "path", NULL));
 }
 
-SETUP(matches) {
-  *state = malloc(2 * sizeof(uchar));
-  return 0;
-}
-TEST(matches, space_direct) {
-  uchar *ranges = *state;
-  assert_true(matches("p r", "projects/real", ranges));
-  assert_int_equal(ranges[0], 0);
-  assert_int_equal(ranges[1], 9);
-}
-TEST(matches, space_indirect) {
-  uchar *ranges = *state;
-  assert_true(matches("p r", "projects/no/real", ranges));
-  assert_int_equal(ranges[0], 0);
-  assert_int_equal(ranges[1], 12);
-}
+#define TEST_MATCHES(name, expr, str, ...)          \
+  TEST(matches, name) {                             \
+    uchar res[] = {__VA_ARGS__};                    \
+    uchar range[sizeof(res)];                       \
+    assert_true(matches(expr, str, range));         \
+    assert_memory_equal(range, res, sizeof(range)); \
+  }
+TEST_MATCHES(space_direct, "p r", "projects/real", 0, 1, 9, 10)
+TEST_MATCHES(space_indirect, "p r", "projects/no/real", 0, 1, 12, 13)
+TEST_MATCHES(slash, "p/r", "projects/real", 0, 1, 9, 10)
+TEST_MATCHES(middle, "e", "project/test", 4, 5)
+TEST_MATCHES(absolute, "/p", "/rp", 2, 3)
+TEST_MATCHES(absolute_middle, "/p s", "/rp/test", 2, 3, 6, 7)
+TEST_MATCHES(second, "p", "test/project", 5, 6)
+TEST_MATCHES(absolute_space, "/ p", "/test/pro", 6, 7)
+TEST(matches, first_false) { assert_false(matches("pr", "test", NULL)); }
+TEST(matches, absolute_false) { assert_false(matches("/p", "/test", NULL)); }
 TEST(matches, space_false) {
   assert_false(matches("p r", "projects/no/luck", NULL));
 }
-TEST(matches, slash) {
-  uchar *ranges = *state;
-  assert_true(matches("p/r", "projects/real", ranges));
-  assert_int_equal(ranges[0], 0);
-  assert_int_equal(ranges[1], 9);
-}
-TEST(matches, first_false) { assert_false(matches("pr", "test", NULL)); }
-TEST(matches, slash_false) {
-  assert_false(matches("p/r", "projects/no", NULL));
-}
-TEST(matches, middle) {
-  uchar *ranges = *state;
-  assert_true(matches("e", "project/test", ranges));
-  assert_int_equal(ranges[0], 4);
-}
-TEST(matches, absolute) {
-  uchar *ranges = *state;
-  assert_true(matches("/p", "/rp", ranges));
-  assert_int_equal(ranges[0], 2);
-}
-TEST(matches, absolute_middle) {
-  uchar *ranges = *state;
-  assert_true(matches("/p s", "/rp/test", ranges));
-  assert_int_equal(ranges[0], 2);
-  assert_int_equal(ranges[1], 6);
-}
-TEST(matches, absolute_false) { assert_false(matches("/p", "/test", NULL)); }
-TEST(matches, second) {
-  uchar *ranges = *state;
-  assert_true(matches("p", "test/project", ranges));
-  assert_int_equal(ranges[0], 5);
-}
+TEST(matches, absolute_relative) { assert_false(matches("/p", "pr", NULL)); }
 TEST(matches, absolute_indirect) {
   assert_false(matches("/p", "/test/pro", NULL));
 }
-TEST(matches, absolute_space) {
-  uchar *ranges = *state;
-  assert_true(matches("/ p", "/test/pro", ranges));
-  assert_int_equal(ranges[0], 6);
-}
-TEST(matches, absolute_relative) { assert_false(matches("/p", "pr", NULL)); }
-TEARDOWN(matches) {
-  free(*state);
-  return 0;
+TEST(matches, slash_false) {
+  assert_false(matches("p/r", "projects/no", NULL));
 }
 
 int main(void) {
@@ -122,17 +86,20 @@ int main(void) {
     ADD(node_matches, slash),
     ADD(node_matches, space),
     ADD(node_matches, expr_shorter_than_path),
+    ADD(matches, space_direct),
+    ADD(matches, space_indirect),
+    ADD(matches, space_false),
+    ADD(matches, slash),
+    ADD(matches, first_false),
+    ADD(matches, slash_false),
+    ADD(matches, absolute),
+    ADD(matches, second),
+    ADD(matches, absolute_indirect),
+    ADD(matches, middle),
+    ADD(matches, absolute_middle),
+    ADD(matches, absolute_false),
+    ADD(matches, absolute_space),
+    ADD(matches, absolute_relative),
   };
-  const struct CMUnitTest matches_tests[] = {
-    ADD(matches, space_direct),      ADD(matches, space_indirect),
-    ADD(matches, space_false),       ADD(matches, slash),
-    ADD(matches, first_false),       ADD(matches, slash_false),
-    ADD(matches, absolute),          ADD(matches, second),
-    ADD(matches, absolute_indirect), ADD(matches, middle),
-    ADD(matches, absolute_middle),   ADD(matches, absolute_false),
-    ADD(matches, absolute_space),    ADD(matches, absolute_relative),
-  };
-  return cmocka_run_group_tests(tests, NULL, NULL) ||
-         cmocka_run_group_tests(matches_tests, matches_test_setup,
-                                matches_test_teardown);
+  return cmocka_run_group_tests(tests, NULL, NULL);
 }
