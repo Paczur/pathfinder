@@ -79,5 +79,3 @@ later components more important:
 - start/end of dirname
 - start/end of word
 - case sensitivity
-- length of word that matches
-- length of dirname that matches
