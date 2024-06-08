@@ -92,35 +92,45 @@ static void word_end_distance(const uchar *ranges, uchar rangesl, uchar *ret,
 }
 
 static void good_case_count(const uchar *ranges, uchar rangesl, uchar *ret,
-                            const char *str) {
+                            const char *str, const char *expr) {
   assert(rangesl > 0);
   assert(ranges);
+  assert(ret);
   assert(str);
   assert(str[0]);
-  assert(ret);
+  assert(expr);
+  assert(expr[0]);
+  size_t counter;
+  size_t index = 0;
+  for(size_t i = 0; i < rangesl / 2; i++) {
+    counter = 0;
+    for(size_t j = ranges[i * 2]; j < ranges[i * 2 + 1]; j++, index++) {
+      if(str[j] == expr[index]) counter++;
+    }
+    index++;
+    ret[i] = counter;
+  }
 }
 
-stats_t *stat(uchar *ranges, uchar rangesl, const char *str) {
+void stat(stats_t *stats, uchar *ranges, uchar rangesl, const char *expr,
+          const char *str) {
   assert(ranges);
   assert(rangesl > 0);
   assert(str);
   assert(str[0]);
-  stats_t *stats = malloc(sizeof(stats_t));
+  assert(stats);
+  assert(stats->dirname_start);
+  assert(stats->dirname_end);
+  assert(stats->word_start);
+  assert(stats->word_end);
+  assert(stats->good_case);
 
   stats->depth = depth(str);
   stats->count = rangesl / 2;
-
-  //!: requires everything to be one after the other :!
-  stats->dirname_start = malloc(stats->count * 5);
-  stats->dirname_end = stats->dirname_start + stats->count;
-  stats->word_start = stats->dirname_end + stats->count;
-  stats->word_end = stats->word_start + stats->count;
-  stats->good_case = stats->word_end + stats->count;
 
   dirname_start_distance(ranges, rangesl, stats->dirname_start, str);
   dirname_end_distance(ranges, rangesl, stats->dirname_end, str);
   word_start_distance(ranges, rangesl, stats->word_start, str);
   word_end_distance(ranges, rangesl, stats->word_end, str);
-  good_case_count(ranges, rangesl, stats->good_case, str);
-  return stats;
+  good_case_count(ranges, rangesl, stats->good_case, str, expr);
 }

@@ -98,6 +98,33 @@ TEST(word_end_distance, multiple_alternating) {
   assert_memory_equal(ret, ans, 3);
 }
 
+TEST(good_case_count, long) {
+  uchar ranges[] = {1, 4};
+  uchar ret;
+  good_case_count(ranges, 2, &ret, "pressed", "res");
+  assert_int_equal(ret, 3);
+}
+TEST(good_case_count, single) {
+  uchar ranges[] = {0, 1};
+  uchar ret;
+  good_case_count(ranges, 2, &ret, "test", "t");
+  assert_int_equal(ret, 1);
+}
+TEST(good_case_count, multiple) {
+  uchar ranges[] = {1, 3, 5, 6};
+  uchar ans[] = {2, 1};
+  uchar ret[2];
+  good_case_count(ranges, 4, ret, "test/lol", "es l");
+  assert_memory_equal(ret, ans, 2);
+}
+TEST(good_case_count, half) {
+  uchar ranges[] = {0, 4, 5, 7};
+  uchar ans[] = {2, 1};
+  uchar ret[2];
+  good_case_count(ranges, 4, ret, "tEsT/Lol", "test lo");
+  assert_memory_equal(ret, ans, 2);
+}
+
 int main(void) {
   const struct CMUnitTest tests[] = {
     ADD(depth, relative),
@@ -118,6 +145,11 @@ int main(void) {
     ADD(word_end_distance, relative_end),
     ADD(word_end_distance, relative_middle),
     ADD(word_end_distance, multiple_alternating),
+    ADD(good_case_count, long),
+    ADD(good_case_count, single),
+    ADD(good_case_count, multiple),
+    ADD(good_case_count, half),
+    // Make tests for stat function
   };
   return cmocka_run_group_tests(tests, NULL, NULL);
 }
