@@ -63,8 +63,8 @@ static void word_start_distance(const uchar *ranges, uchar rangesl, uchar *ret,
   for(size_t i = 0; i < rangesl / 2; i++) {
     dist = 0;
     c = ranges[i * 2];
-    for(; c >= dist && ((str[c - dist] > 'A' && str[c - dist] < 'Z') ||
-                        (str[c - dist] > 'a' && str[c - dist] < 'z'));
+    for(; c >= dist && ((str[c - dist] >= 'A' && str[c - dist] <= 'Z') ||
+                        (str[c - dist] >= 'a' && str[c - dist] <= 'z'));
         dist++) {
     }
     ret[i] = dist - 1;
@@ -83,8 +83,8 @@ static void word_end_distance(const uchar *ranges, uchar rangesl, uchar *ret,
   for(size_t i = 0; i < rangesl / 2; i++) {
     dist = 0;
     c = ranges[i * 2 + 1];
-    for(; c >= dist && ((str[c + dist] > 'A' && str[c + dist] < 'Z') ||
-                        (str[c + dist] > 'a' && str[c + dist] < 'z'));
+    for(; str[c + dist] && ((str[c + dist] >= 'A' && str[c + dist] <= 'Z') ||
+                            (str[c + dist] >= 'a' && str[c + dist] <= 'z'));
         dist++) {
     }
     ret[i] = dist;
@@ -133,4 +133,24 @@ void stat(stats_t *stats, uchar *ranges, uchar rangesl, const char *expr,
   word_start_distance(ranges, rangesl, stats->word_start, str);
   word_end_distance(ranges, rangesl, stats->word_end, str);
   good_case_count(ranges, rangesl, stats->good_case, str, expr);
+}
+
+void stats_alloc(stats_t **stats, uchar node_count) {
+  *stats = malloc(sizeof(stats_t));
+  (*stats)->depth = 0;
+  (*stats)->count = 0;
+  (*stats)->dirname_start = malloc(sizeof(node_count));
+  (*stats)->dirname_end = malloc(sizeof(node_count));
+  (*stats)->word_start = malloc(sizeof(node_count));
+  (*stats)->word_end = malloc(sizeof(node_count));
+  (*stats)->good_case = malloc(sizeof(node_count));
+}
+
+void stats_free(stats_t **stats) {
+  free((*stats)->dirname_start);
+  free((*stats)->dirname_end);
+  free((*stats)->word_start);
+  free((*stats)->word_end);
+  free((*stats)->good_case);
+  free(*stats);
 }

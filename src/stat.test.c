@@ -33,9 +33,9 @@ TEST(dirname_start_distance, multiple_alternating) {
 }
 
 TEST(dirname_end_distance, relative_end) {
-  uchar node_is[] = {1, 2};
+  uchar node_is[] = {1, 3};
   uchar ret;
-  dirname_end_distance(node_is, 2, &ret, "pr");
+  dirname_end_distance(node_is, 2, &ret, "ppr");
   assert_int_equal(ret, 0);
 }
 TEST(dirname_end_distance, relative_middle) {
@@ -77,6 +77,30 @@ TEST(word_start_distance, multiple_alternating) {
   word_start_distance(node_is, 6, ret, "pr/prr-pp");
   assert_memory_equal(ret, ans, 3);
 }
+TEST(word_start_distance, a) {
+  uchar node_is[] = {1, 2};
+  uchar ret;
+  word_start_distance(node_is, 2, &ret, "/a");
+  assert_int_equal(ret, 0);
+}
+TEST(word_start_distance, A) {
+  uchar node_is[] = {1, 2};
+  uchar ret;
+  word_start_distance(node_is, 2, &ret, "/A");
+  assert_int_equal(ret, 0);
+}
+TEST(word_start_distance, z) {
+  uchar node_is[] = {1, 2};
+  uchar ret;
+  word_start_distance(node_is, 2, &ret, "/z");
+  assert_int_equal(ret, 0);
+}
+TEST(word_start_distance, Z) {
+  uchar node_is[] = {1, 2};
+  uchar ret;
+  word_start_distance(node_is, 2, &ret, "/Z");
+  assert_int_equal(ret, 0);
+}
 
 TEST(word_end_distance, relative_end) {
   uchar node_is[] = {1, 2};
@@ -90,12 +114,42 @@ TEST(word_end_distance, relative_middle) {
   word_end_distance(node_is, 2, &ret, "test");
   assert_int_equal(ret, 2);
 }
+TEST(word_end_distance, relative_start) {
+  uchar node_is[] = {0, 1};
+  uchar ret;
+  word_end_distance(node_is, 2, &ret, "test");
+  assert_int_equal(ret, 3);
+}
 TEST(word_end_distance, multiple_alternating) {
   uchar node_is[] = {1, 2, 4, 5, 8, 9};
   uchar ans[3] = {0, 1, 0};
   uchar ret[3];
   word_end_distance(node_is, 6, ret, "pr?prr/pp");
   assert_memory_equal(ret, ans, 3);
+}
+TEST(word_end_distance, a) {
+  uchar node_is[] = {0, 1};
+  uchar ret;
+  word_end_distance(node_is, 2, &ret, "aa/");
+  assert_int_equal(ret, 1);
+}
+TEST(word_end_distance, A) {
+  uchar node_is[] = {0, 1};
+  uchar ret;
+  word_end_distance(node_is, 2, &ret, "AA/");
+  assert_int_equal(ret, 1);
+}
+TEST(word_end_distance, z) {
+  uchar node_is[] = {0, 1};
+  uchar ret;
+  word_end_distance(node_is, 2, &ret, "zz/");
+  assert_int_equal(ret, 1);
+}
+TEST(word_end_distance, Z) {
+  uchar node_is[] = {0, 1};
+  uchar ret;
+  word_end_distance(node_is, 2, &ret, "ZZ/");
+  assert_int_equal(ret, 1);
 }
 
 TEST(good_case_count, long) {
@@ -125,6 +179,58 @@ TEST(good_case_count, half) {
   assert_memory_equal(ret, ans, 2);
 }
 
+void assert_stats_equal(const stats_t *x, const stats_t *y) {
+  assert_non_null(x->dirname_start);
+  assert_non_null(y->dirname_start);
+  assert_non_null(x->dirname_end);
+  assert_non_null(y->dirname_end);
+  assert_non_null(x->word_start);
+  assert_non_null(y->word_start);
+  assert_non_null(x->word_end);
+  assert_non_null(y->word_end);
+  assert_non_null(x->good_case);
+  assert_non_null(y->good_case);
+  assert_int_not_equal(x->depth, 0);
+  assert_int_not_equal(y->depth, 0);
+  assert_int_not_equal(x->count, 0);
+  assert_int_not_equal(y->count, 0);
+  assert_int_equal(x->depth, y->depth);
+  assert_int_equal(x->count, y->count);
+  assert_memory_equal(x->dirname_start, y->dirname_start, x->count);
+  assert_memory_equal(x->dirname_end, y->dirname_end, x->count);
+  assert_memory_equal(x->word_start, y->word_start, x->count);
+  assert_memory_equal(x->word_end, y->word_end, x->count);
+  assert_memory_equal(x->good_case, y->good_case, x->count);
+}
+
+TEST(stat, single) {
+  stats_t stats = STAT_INIT(1);
+  uchar ranges[2] = {1, 5};
+  stats_t ans = {.depth = 1,
+                 .count = 1,
+                 .dirname_start = &(uchar[]){1},
+                 .dirname_end = &(uchar[]){0},
+                 .word_start = &(uchar[]){1},
+                 .word_end = &(uchar[]){0},
+                 .good_case = &(uchar[]){4}};
+  stat(&stats, ranges, 2, "test", "ttest");
+  assert_stats_equal(&stats, &ans);
+}
+
+TEST(stat, multiple) {
+  stats_t stats = STAT_INIT(3);
+  uchar ranges[] = {1, 5, 8, 10, 11, 12};
+  stats_t ans = {.depth = 4,
+                 .count = 3,
+                 .dirname_start = (uchar[]){1, 0, 0},
+                 .dirname_end = (uchar[]){0, 0, 3},
+                 .word_start = (uchar[]){1, 0, 0},
+                 .word_end = (uchar[]){0, 0, 3},
+                 .good_case = (uchar[]){3, 2, 1}};
+  stat(&stats, ranges, 6, "Test ro/a", "ttest/p/ro/afgd");
+  assert_stats_equal(&stats, &ans);
+}
+
 int main(void) {
   const struct CMUnitTest tests[] = {
     ADD(depth, relative),
@@ -142,13 +248,24 @@ int main(void) {
     ADD(word_start_distance, relative_middle),
     ADD(word_start_distance, absolute_start),
     ADD(word_start_distance, multiple_alternating),
+    ADD(word_start_distance, a),
+    ADD(word_start_distance, A),
+    ADD(word_start_distance, z),
+    ADD(word_start_distance, Z),
+    ADD(word_end_distance, relative_start),
     ADD(word_end_distance, relative_end),
     ADD(word_end_distance, relative_middle),
     ADD(word_end_distance, multiple_alternating),
+    ADD(word_end_distance, a),
+    ADD(word_end_distance, A),
+    ADD(word_end_distance, z),
+    ADD(word_end_distance, Z),
     ADD(good_case_count, long),
     ADD(good_case_count, single),
     ADD(good_case_count, multiple),
     ADD(good_case_count, half),
+    ADD(stat, single),
+    ADD(stat, multiple),
     // Make tests for stat function
   };
   return cmocka_run_group_tests(tests, NULL, NULL);
