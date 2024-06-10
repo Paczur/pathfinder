@@ -74,8 +74,10 @@ p/g -> ERROR
 
 
 ## Scoring priority
-- depth
-later components more important:
-- start/end of dirname
-- start/end of word
-- case sensitivity
+- depth                 1.
+- start/end of dirname  .8/.6
+- start/end of word     .4/.2
+- case sensitivity      .1
+### Scoring multiplier based on node:
+1/(count*2) ... 0.25 0.5 1.0
+### Precision: 1000+
