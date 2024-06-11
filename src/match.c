@@ -19,8 +19,16 @@ static bool equal(char c1, char c2) {
 static bool node_matches(const char *expr, const char *str, uchar *range) {
   assert(expr);
   assert(str);
-  assert(expr[0]);
   assert(str[0]);
+  if(!expr[0] || expr[0] == '/') {
+    size_t len = 0;
+    while(str[len] && str[len] != '/') len++;
+    if(range) {
+      range[0] = len - 1;
+      range[1] = len - 1;
+    }
+    return true;
+  }
   size_t expr_i = 0;
   size_t i = 0;
   for(; str[i] && str[i] != '/'; i++) {
@@ -40,73 +48,52 @@ static bool node_matches(const char *expr, const char *str, uchar *range) {
   return false;
 }
 
-// TODO: requires refactor
 bool matches(const char *expr, const char *str, uchar *ranges) {
   assert(expr);
   assert(str);
   assert(expr[0]);
   assert(str[0]);
-  bool match;
+  size_t expr_i = 0;
+  size_t str_i = 0;
   size_t ranges_i = 0;
   bool space = true;
-  size_t str_i = 0;
-  size_t i = 0;
-  if(expr[0] == '/') {
-    if(str[0] != '/') return false;
+  bool match = false;
+
+  // handling of absolute paths
+  if(expr[expr_i] == '/') {
+    if(str[str_i] != '/') return false;
+    expr_i++;
     str_i++;
-    i++;
-    space = false;
-    if(expr[1] == ' ') {
+    if(expr[expr_i] == ' ') {
       space = true;
-      i++;
+      expr_i++;
+    } else {
+      space = false;
     }
   }
-  match = node_matches(expr + i, str + str_i, ranges);
-  if(space && !match) {
-    for(; str[str_i]; str_i++) {
-      if(str[str_i - 1] != '/') continue;
-      match = node_matches(expr + i, str + str_i, ranges);
-      if(match) break;
-    }
-  }
-  if(!match) return false;
-  if(ranges) {
-    ranges[0] += str_i;
-    ranges[1] += str_i;
-    ranges_i += 2;
-    str_i = ranges[1];
-  }
-  for(; expr[i]; i++) {
-    if(expr[i] != ' ' && expr[i] != '/') continue;
-    while(str[str_i] && str[str_i] != '/') str_i++;
-    if(!str[str_i] || !str[str_i + 1]) return false;
-    space = expr[i] == ' ';
-    i++;
-    str_i++;
-    match = node_matches(expr + i, str + str_i, ranges + ranges_i);
-    if(!space && !match) return false;
-    if(match) {
+
+  while(str[str_i]) {
+    if(!expr[expr_i]) return false;  // pattern finnished but string didn't
+    if((match = node_matches(expr + expr_i, str + str_i, ranges + ranges_i))) {
       if(ranges) {
         ranges[ranges_i] += str_i;
         ranges[ranges_i + 1] += str_i;
+        expr_i += ranges[ranges_i + 1] - ranges[ranges_i] + 1;
         str_i = ranges[ranges_i + 1];
         ranges_i += 2;
+      } else {
+        while(expr[expr_i] && expr[expr_i] != '/' && expr[expr_i] != ' ')
+          expr_i++;
+        if(expr[expr_i]) expr_i++;
       }
-      continue;
+      space = (expr[expr_i - 1] == ' ');
+    } else if(!space) {  // didn't match immediately
+      break;
     }
-    for(; str[str_i]; str_i++) {
-      if(str[str_i - 1] != '/') continue;
-      match = node_matches(expr + i, str + str_i, ranges + ranges_i);
-      if(match) {
-        if(ranges) {
-          ranges[ranges_i] += str_i;
-          ranges[ranges_i + 1] += str_i;
-          str_i = ranges[ranges_i + 1];
-          ranges_i += 2;
-        }
-        break;
-      }
-    }
+
+    // go to the next path element
+    while(str[str_i] && str[str_i] != '/') str_i++;
+    if(str[str_i]) str_i++;
   }
   return match;
 }

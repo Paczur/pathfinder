@@ -31,6 +31,7 @@ TEST_NODE_MATCHES(prefix_repetition, "pr", "ppr", 1, 3)
 TEST_NODE_MATCHES(case, "PR", "pr", 0, 2);
 TEST_NODE_MATCHES(slash, "pr/test", "pr", 0, 2)
 TEST_NODE_MATCHES(space, "pr test2", "pr", 0, 2)
+TEST_NODE_MATCHES(empty, "", "pr", 1, 1)
 TEST(node_matches, expr_shorter_than_path) {
   assert_false(node_matches("s", "path", NULL));
 }
@@ -45,13 +46,16 @@ TEST(node_matches, expr_shorter_than_path) {
 TEST_MATCHES(space_direct, "p r", "projects/real", 0, 1, 9, 10)
 TEST_MATCHES(space_indirect, "p r", "projects/no/real", 0, 1, 12, 13)
 TEST_MATCHES(slash, "p/r", "projects/real", 0, 1, 9, 10)
-TEST_MATCHES(middle, "e", "project/test", 4, 5)
+TEST_MATCHES(middle, "e", "project", 4, 5)
 TEST_MATCHES(absolute, "/p", "/rp", 2, 3)
 TEST_MATCHES(absolute_middle, "/p s", "/rp/test", 2, 3, 6, 7)
 TEST_MATCHES(second, "p", "test/project", 5, 6)
 TEST_MATCHES(absolute_space, "/ p", "/test/pro", 6, 7)
 TEST(matches, first_false) { assert_false(matches("pr", "test", NULL)); }
 TEST(matches, absolute_false) { assert_false(matches("/p", "/test", NULL)); }
+TEST(matches, longer_path) {
+  assert_false(matches("p", "projects/test", NULL));
+}
 TEST(matches, space_false) {
   assert_false(matches("p r", "projects/no/luck", NULL));
 }
@@ -62,6 +66,8 @@ TEST(matches, absolute_indirect) {
 TEST(matches, slash_false) {
   assert_false(matches("p/r", "projects/no", NULL));
 }
+TEST_MATCHES(skip_one, "p//t", "projects/lol/test", 0, 1, 11, 11, 13, 14)
+TEST_MATCHES(always_skips, "p//t", "projects/test/test2", 0, 1, 12, 12, 14, 15)
 
 int main(void) {
   const struct CMUnitTest tests[] = {
@@ -86,6 +92,7 @@ int main(void) {
     ADD(node_matches, slash),
     ADD(node_matches, space),
     ADD(node_matches, expr_shorter_than_path),
+    ADD(node_matches, empty),
     ADD(matches, space_direct),
     ADD(matches, space_indirect),
     ADD(matches, space_false),
@@ -100,6 +107,9 @@ int main(void) {
     ADD(matches, absolute_false),
     ADD(matches, absolute_space),
     ADD(matches, absolute_relative),
+    ADD(matches, skip_one),
+    ADD(matches, always_skips),
+    ADD(matches, longer_path),
   };
   return cmocka_run_group_tests(tests, NULL, NULL);
 }
