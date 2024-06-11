@@ -152,30 +152,30 @@ TEST(word_end_distance, Z) {
   assert_int_equal(ret, 1);
 }
 
-TEST(good_case_count, long) {
+TEST(bad_case_count, long) {
   uchar ranges[] = {1, 4};
   uchar ret;
-  good_case_count(ranges, 2, &ret, "pressed", "res");
-  assert_int_equal(ret, 3);
+  bad_case_count(ranges, 2, &ret, "pressed", "res");
+  assert_int_equal(ret, 0);
 }
-TEST(good_case_count, single) {
+TEST(bad_case_count, single) {
   uchar ranges[] = {0, 1};
   uchar ret;
-  good_case_count(ranges, 2, &ret, "test", "t");
-  assert_int_equal(ret, 1);
+  bad_case_count(ranges, 2, &ret, "test", "t");
+  assert_int_equal(ret, 0);
 }
-TEST(good_case_count, multiple) {
+TEST(bad_case_count, multiple) {
   uchar ranges[] = {1, 3, 5, 6};
-  uchar ans[] = {2, 1};
+  uchar ans[] = {0, 0};
   uchar ret[2];
-  good_case_count(ranges, 4, ret, "test/lol", "es l");
+  bad_case_count(ranges, 4, ret, "test/lol", "es l");
   assert_memory_equal(ret, ans, 2);
 }
-TEST(good_case_count, half) {
+TEST(bad_case_count, half) {
   uchar ranges[] = {0, 4, 5, 7};
   uchar ans[] = {2, 1};
   uchar ret[2];
-  good_case_count(ranges, 4, ret, "tEsT/Lol", "test lo");
+  bad_case_count(ranges, 4, ret, "tEsT/Lol", "test lo");
   assert_memory_equal(ret, ans, 2);
 }
 
@@ -188,8 +188,8 @@ void assert_stats_equal(const stats_t *x, const stats_t *y) {
   assert_non_null(y->word_start);
   assert_non_null(x->word_end);
   assert_non_null(y->word_end);
-  assert_non_null(x->good_case);
-  assert_non_null(y->good_case);
+  assert_non_null(x->bad_case);
+  assert_non_null(y->bad_case);
   assert_int_not_equal(x->depth, 0);
   assert_int_not_equal(y->depth, 0);
   assert_int_not_equal(x->count, 0);
@@ -200,7 +200,7 @@ void assert_stats_equal(const stats_t *x, const stats_t *y) {
   assert_memory_equal(x->dirname_end, y->dirname_end, x->count);
   assert_memory_equal(x->word_start, y->word_start, x->count);
   assert_memory_equal(x->word_end, y->word_end, x->count);
-  assert_memory_equal(x->good_case, y->good_case, x->count);
+  assert_memory_equal(x->bad_case, y->bad_case, x->count);
 }
 
 TEST(stat, single) {
@@ -212,7 +212,7 @@ TEST(stat, single) {
                  .dirname_end = &(uchar[]){0},
                  .word_start = &(uchar[]){1},
                  .word_end = &(uchar[]){0},
-                 .good_case = &(uchar[]){4}};
+                 .bad_case = &(uchar[]){0}};
   stat(&stats, ranges, 2, "test", "ttest");
   assert_stats_equal(&stats, &ans);
 }
@@ -226,7 +226,7 @@ TEST(stat, multiple) {
                  .dirname_end = (uchar[]){0, 0, 3},
                  .word_start = (uchar[]){1, 0, 0},
                  .word_end = (uchar[]){0, 0, 3},
-                 .good_case = (uchar[]){3, 2, 1}};
+                 .bad_case = (uchar[]){1, 0, 0}};
   stat(&stats, ranges, 6, "Test ro/a", "ttest/p/ro/afgd");
   assert_stats_equal(&stats, &ans);
 }
@@ -260,10 +260,10 @@ int main(void) {
     ADD(word_end_distance, A),
     ADD(word_end_distance, z),
     ADD(word_end_distance, Z),
-    ADD(good_case_count, long),
-    ADD(good_case_count, single),
-    ADD(good_case_count, multiple),
-    ADD(good_case_count, half),
+    ADD(bad_case_count, long),
+    ADD(bad_case_count, single),
+    ADD(bad_case_count, multiple),
+    ADD(bad_case_count, half),
     ADD(stat, single),
     ADD(stat, multiple),
     // Make tests for stat function

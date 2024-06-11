@@ -8,9 +8,9 @@ TEST(score, simple) {
                    .dirname_end = &(uchar[]){1, 0},
                    .word_start = &(uchar[]){0, 1},
                    .word_end = &(uchar[]){1, 0},
-                   .good_case = &(uchar[]){1, 2}};
+                   .bad_case = &(uchar[]){1, 2}};
   int ans = score(&stats);
-  assert_int_equal(ans, 6825);
+  assert_int_equal(ans, 83750);
 }
 
 int main(void) {

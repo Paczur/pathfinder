@@ -91,8 +91,8 @@ static void word_end_distance(const uchar *ranges, uchar rangesl, uchar *ret,
   }
 }
 
-static void good_case_count(const uchar *ranges, uchar rangesl, uchar *ret,
-                            const char *str, const char *expr) {
+static void bad_case_count(const uchar *ranges, uchar rangesl, uchar *ret,
+                           const char *str, const char *expr) {
   assert(rangesl > 0);
   assert(ranges);
   assert(ret);
@@ -105,7 +105,7 @@ static void good_case_count(const uchar *ranges, uchar rangesl, uchar *ret,
   for(size_t i = 0; i < rangesl / 2; i++) {
     counter = 0;
     for(size_t j = ranges[i * 2]; j < ranges[i * 2 + 1]; j++, index++) {
-      if(str[j] == expr[index]) counter++;
+      if(str[j] != expr[index]) counter++;
     }
     index++;
     ret[i] = counter;
@@ -123,7 +123,7 @@ void stat(stats_t *stats, uchar *ranges, uchar rangesl, const char *expr,
   assert(stats->dirname_end);
   assert(stats->word_start);
   assert(stats->word_end);
-  assert(stats->good_case);
+  assert(stats->bad_case);
 
   stats->depth = depth(str);
   stats->count = rangesl / 2;
@@ -132,7 +132,7 @@ void stat(stats_t *stats, uchar *ranges, uchar rangesl, const char *expr,
   dirname_end_distance(ranges, rangesl, stats->dirname_end, str);
   word_start_distance(ranges, rangesl, stats->word_start, str);
   word_end_distance(ranges, rangesl, stats->word_end, str);
-  good_case_count(ranges, rangesl, stats->good_case, str, expr);
+  bad_case_count(ranges, rangesl, stats->bad_case, str, expr);
 }
 
 void stats_alloc(stats_t **stats, uchar node_count) {
@@ -143,7 +143,7 @@ void stats_alloc(stats_t **stats, uchar node_count) {
   (*stats)->dirname_end = malloc(sizeof(node_count));
   (*stats)->word_start = malloc(sizeof(node_count));
   (*stats)->word_end = malloc(sizeof(node_count));
-  (*stats)->good_case = malloc(sizeof(node_count));
+  (*stats)->bad_case = malloc(sizeof(node_count));
 }
 
 void stats_free(stats_t **stats) {
@@ -151,6 +151,6 @@ void stats_free(stats_t **stats) {
   free((*stats)->dirname_end);
   free((*stats)->word_start);
   free((*stats)->word_end);
-  free((*stats)->good_case);
+  free((*stats)->bad_case);
   free(*stats);
 }
