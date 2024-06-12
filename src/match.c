@@ -16,7 +16,7 @@ static bool equal(char c1, char c2) {
   return (letter(c1) ? uppercase(c1) : c1) == (letter(c2) ? uppercase(c2) : c2);
 }
 
-static bool node_matches(const char *expr, const char *str, uchar *range) {
+static bool node_matches(uchar *range, const char *str, const char *expr) {
   assert(expr);
   assert(str);
   assert(str[0]);
@@ -34,7 +34,7 @@ static bool node_matches(const char *expr, const char *str, uchar *range) {
   for(; str[i] && str[i] != '/'; i++) {
     if(equal(str[i], expr[expr_i])) {
       expr_i++;
-      if(!expr[expr_i] || expr[expr_i] == ' ' || expr[expr_i] == '/') {
+      if(!expr[expr_i] || expr[expr_i] == '/') {
         if(range) {
           range[1] = i + 1;
           range[0] = range[1] - expr_i;
@@ -48,46 +48,59 @@ static bool node_matches(const char *expr, const char *str, uchar *range) {
   return false;
 }
 
-bool matches(const char *expr, const char *str, uchar *ranges) {
+bool matches(uchar *ranges, const char *str, const char *const *expr,
+             uchar len) {
   assert(expr);
   assert(str);
   assert(expr[0]);
   assert(str[0]);
+  size_t node_i = 0;
   size_t expr_i = 0;
   size_t str_i = 0;
   size_t ranges_i = 0;
-  bool space = true;
+  bool allow_skip = true;
   bool match = false;
 
   // handling of absolute paths
-  if(expr[expr_i] == '/') {
+  if(expr[node_i][expr_i] == '/') {
     if(str[str_i] != '/') return false;
     expr_i++;
     str_i++;
-    if(expr[expr_i] == ' ') {
-      space = true;
-      expr_i++;
+    if(!expr[node_i][expr_i]) {
+      allow_skip = true;
+      node_i++;
+      expr_i = 0;
+      ranges[ranges_i] = 0;
+      ranges[ranges_i + 1] = 1;
+      ranges_i += 2;
     } else {
-      space = false;
+      allow_skip = false;
     }
   }
 
   while(str[str_i]) {
-    if(!expr[expr_i]) return false;  // pattern finnished but string didn't
-    if((match = node_matches(expr + expr_i, str + str_i, ranges + ranges_i))) {
+    if(!expr[node_i][expr_i]) {
+      if(node_i == (size_t)len - 1)
+        return false;  // pattern finnished but string didn't
+      node_i++;
+      allow_skip = true;
+      expr_i = 0;
+    }
+    if((match = node_matches(ranges + ranges_i, str + str_i,
+                             expr[node_i] + expr_i))) {
       if(ranges) {
         ranges[ranges_i] += str_i;
         ranges[ranges_i + 1] += str_i;
-        expr_i += ranges[ranges_i + 1] - ranges[ranges_i] + 1;
+        expr_i += ranges[ranges_i + 1] - ranges[ranges_i];
+        if(expr[node_i][expr_i] == '/') expr_i++;
         str_i = ranges[ranges_i + 1];
         ranges_i += 2;
       } else {
-        while(expr[expr_i] && expr[expr_i] != '/' && expr[expr_i] != ' ')
-          expr_i++;
-        if(expr[expr_i]) expr_i++;
+        while(expr[node_i][expr_i] && expr[node_i][expr_i] != '/') expr_i++;
+        if(expr[node_i][expr_i]) expr_i++;
       }
-      space = (expr[expr_i - 1] == ' ');
-    } else if(!space) {  // didn't match immediately
+      allow_skip = false;
+    } else if(!allow_skip) {  // didn't match immediately
       break;
     }
 

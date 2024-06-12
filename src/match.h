@@ -3,6 +3,7 @@
 
 #include "types.h"
 
-bool matches(const char *expr, const char *str, uchar *node_is);
+bool matches(uchar *ranges, const char *str, const char *const *expr,
+             uchar len);
 
 #endif
