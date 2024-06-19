@@ -24,7 +24,7 @@ typedef struct stats_t {
     .word_end = &(uchar[size]){0},      \
     .bad_case = &(uchar[size]){0},      \
   }
-void stats_alloc(stats_t **stats, uchar node_count);
-void stats_free(stats_t **stats);
+void stats_alloc(stats_t *stats, uchar node_count);
+void stats_free(stats_t *stats);
 
 #endif

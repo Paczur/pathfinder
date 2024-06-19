@@ -168,14 +168,16 @@ TEST(bad_case_count, multiple) {
   uchar ranges[] = {1, 3, 5, 6};
   uchar ans[] = {0, 0};
   uchar ret[2];
-  bad_case_count(ranges, 4, ret, "test/lol", "es l");
+  char *expr[] = {"es", "l"};
+  bad_case_count(ranges, 4, ret, "test/lol", expr);
   assert_memory_equal(ret, ans, 2);
 }
 TEST(bad_case_count, half) {
   uchar ranges[] = {0, 4, 5, 7};
   uchar ans[] = {2, 1};
   uchar ret[2];
-  bad_case_count(ranges, 4, ret, "tEsT/Lol", "test lo");
+  char *expr[] = {"test", "lo"};
+  bad_case_count(ranges, 4, ret, "tEsT/Lol", expr);
   assert_memory_equal(ret, ans, 2);
 }
 
