@@ -70,9 +70,11 @@ bool matches(uchar *ranges, const char *str, const char *const *expr,
       allow_skip = true;
       node_i++;
       expr_i = 0;
-      ranges[ranges_i] = 0;
-      ranges[ranges_i + 1] = 1;
-      ranges_i += 2;
+      if(ranges) {
+        ranges[ranges_i] = 0;
+        ranges[ranges_i + 1] = 1;
+        ranges_i += 2;
+      }
     } else {
       allow_skip = false;
     }
@@ -86,7 +88,7 @@ bool matches(uchar *ranges, const char *str, const char *const *expr,
       allow_skip = true;
       expr_i = 0;
     }
-    if((match = node_matches(ranges + ranges_i, str + str_i,
+    if((match = node_matches((ranges) ? ranges + ranges_i : NULL, str + str_i,
                              expr[node_i] + expr_i))) {
       if(ranges) {
         ranges[ranges_i] += str_i;
