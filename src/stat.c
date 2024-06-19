@@ -101,15 +101,27 @@ static void bad_case_count(const uchar *ranges, uchar rangesl, uchar *ret,
   assert(expr);
   assert(expr[0]);
   assert(expr[0][0]);
-  size_t counter;
+  size_t counter = 0;
+  size_t ranges_i = 0;
   size_t index = 0;
-  for(size_t i = 0; i < rangesl / 2; i++) {
-    counter = 0;
-    for(size_t j = ranges[i * 2]; j < ranges[i * 2 + 1]; j++, index++) {
-      if(str[j] != expr[i][index]) counter++;
+  size_t slash = 0;
+  for(size_t j = 0; ranges_i + 1 < rangesl; j++) {
+    for(size_t i = 0; expr[j][i]; i++) {
+      if(expr[j][i] == '/') {
+        ret[index++] = counter;
+        counter = 0;
+        slash = i + 1;
+        ranges_i += 2;
+        continue;
+      }
+      if(expr[j][i] != str[ranges[ranges_i] + (slash ? i - slash : i)]) {
+        counter++;
+      }
     }
-    index++;
-    ret[i] = counter;
+    ret[index++] = counter;
+    counter = 0;
+    ranges_i += 2;
+    slash = 0;
   }
 }
 

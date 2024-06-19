@@ -155,13 +155,15 @@ TEST(word_end_distance, Z) {
 TEST(bad_case_count, long) {
   uchar ranges[] = {1, 4};
   uchar ret;
-  bad_case_count(ranges, 2, &ret, "pressed", "res");
+  char *expr[] = {"res"};
+  bad_case_count(ranges, 2, &ret, "pressed", expr);
   assert_int_equal(ret, 0);
 }
 TEST(bad_case_count, single) {
   uchar ranges[] = {0, 1};
   uchar ret;
-  bad_case_count(ranges, 2, &ret, "test", "t");
+  char *expr[] = {"t"};
+  bad_case_count(ranges, 2, &ret, "test", expr);
   assert_int_equal(ret, 0);
 }
 TEST(bad_case_count, multiple) {
@@ -215,7 +217,8 @@ TEST(stat, single) {
                  .word_start = &(uchar[]){1},
                  .word_end = &(uchar[]){0},
                  .bad_case = &(uchar[]){0}};
-  stat(&stats, ranges, 2, "test", "ttest");
+  char *expr[] = {"test"};
+  stat(&stats, ranges, 2, expr, "ttest");
   assert_stats_equal(&stats, &ans);
 }
 
@@ -229,7 +232,8 @@ TEST(stat, multiple) {
                  .word_start = (uchar[]){1, 0, 0},
                  .word_end = (uchar[]){0, 0, 3},
                  .bad_case = (uchar[]){1, 0, 0}};
-  stat(&stats, ranges, 6, "Test ro/a", "ttest/p/ro/afgd");
+  char *expr[] = {"Test", "ro/a"};
+  stat(&stats, ranges, 6, expr, "ttest/p/ro/afgd");
   assert_stats_equal(&stats, &ans);
 }
 
