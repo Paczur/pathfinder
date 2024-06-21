@@ -16,7 +16,7 @@ static bool equal(char c1, char c2) {
   return (letter(c1) ? uppercase(c1) : c1) == (letter(c2) ? uppercase(c2) : c2);
 }
 
-static bool node_matches(uchar *range, const char *str, const char *expr) {
+static bool node_matches(uint *range, const char *str, const char *expr) {
   assert(expr);
   assert(str);
   assert(str[0]);
@@ -48,8 +48,8 @@ static bool node_matches(uchar *range, const char *str, const char *expr) {
   return false;
 }
 
-bool matches(uchar *ranges, const char *str, const char *const *expr,
-             uchar len) {
+bool matches(uint *ranges, const char *str, const char *const *expr,
+             uint len) {
   assert(expr);
   assert(str);
   assert(expr[0]);

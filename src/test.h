@@ -5,6 +5,7 @@
 #define ADD(function, case) cmocka_unit_test(function##_test_##case)
 #define SETUP(function) static int function##_test_setup(void **state)
 #define TEARDOWN(function) static int function##_test_teardown(void **state)
+#define LENGTH(x) (sizeof(x) / sizeof((x)[0]))
 
 #include <setjmp.h>
 #include <stdarg.h>

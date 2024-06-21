@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-bool matches(uchar *ranges, const char *str, const char *const *expr,
-             uchar len);
+bool matches(uint *ranges, const char *str, const char *const *expr,
+             uint len);
 
 #endif

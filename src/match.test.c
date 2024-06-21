@@ -18,8 +18,8 @@ TEST(equal, symbol) { assert_false(equal('~', '^')); }
 
 #define TEST_NODE_MATCHES(name, str, expr, ...)     \
   TEST(node_matches, name) {                        \
-    uchar res[] = {__VA_ARGS__};                    \
-    uchar range[sizeof(res)];                       \
+    uint res[] = {__VA_ARGS__};                     \
+    uint range[LENGTH(res)];                        \
     assert_true(node_matches(range, str, expr));    \
     assert_memory_equal(range, res, sizeof(range)); \
   }
@@ -41,28 +41,28 @@ TEST(node_matches, expr_shorter_than_path) {
 
 #define TEST_MATCHES(name, str, expr, ...)          \
   TEST(matches, name) {                             \
-    uchar res[] = {__VA_ARGS__};                    \
-    uchar range[sizeof(res)];                       \
+    uint res[] = {__VA_ARGS__};                     \
+    uint range[LENGTH(res)];                        \
     char *e[] = {expr};                             \
     assert_true(matches(range, str, e, 1));         \
     assert_memory_equal(range, res, sizeof(range)); \
   }
-#define TEST_NOT_MATCHES(name, str, ...)                           \
-  TEST(matches, name) {                                            \
-    char *e[] = {__VA_ARGS__};                                     \
-    assert_false(matches(NULL, str, e, sizeof(e) / sizeof(e[0]))); \
+#define TEST_NOT_MATCHES(name, str, ...)            \
+  TEST(matches, name) {                             \
+    char *e[] = {__VA_ARGS__};                      \
+    assert_false(matches(NULL, str, e, LENGTH(e))); \
   }
 
 TEST(matches, space_direct) {
-  uchar res[] = {0, 1, 9, 10};
-  uchar range[sizeof(res)];
+  uint res[] = {0, 1, 9, 10};
+  uint range[LENGTH(res)];
   char *expr[] = {"p", "r"};
   assert_true(matches(range, "projects/real", expr, sizeof(expr)));
   assert_memory_equal(range, res, sizeof(range));
 }
 TEST(matches, space_indirect) {
-  uchar res[] = {0, 1, 12, 13};
-  uchar range[sizeof(res)];
+  uint res[] = {0, 1, 12, 13};
+  uint range[LENGTH(res)];
   char *expr[] = {"p", "r"};
   assert_true(matches(range, "projects/no/real", expr, sizeof(expr)));
   assert_memory_equal(range, res, sizeof(range));
@@ -71,15 +71,15 @@ TEST_MATCHES(slash, "projects/real", "p/r", 0, 1, 9, 10)
 TEST_MATCHES(middle, "project", "e", 4, 5)
 TEST_MATCHES(absolute, "/rp", "/p", 2, 3)
 TEST(matches, absolute_middle) {
-  uchar res[] = {2, 3, 6, 7};
-  uchar range[sizeof(res)];
+  uint res[] = {2, 3, 6, 7};
+  uint range[LENGTH(res)];
   char *e[] = {"/p", "s"};
   assert_true(matches(range, "/rp/test", e, 2));
   assert_memory_equal(range, res, sizeof(range));
 }
 TEST(matches, absolute_space) {
-  uchar res[] = {0, 1, 6, 7};
-  uchar range[sizeof(res)];
+  uint res[] = {0, 1, 6, 7};
+  uint range[LENGTH(res)];
   char *e[] = {"/", "p"};
   assert_true(matches(range, "/test/pro", e, 2));
   assert_memory_equal(range, res, sizeof(range));

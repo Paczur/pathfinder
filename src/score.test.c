@@ -3,25 +3,23 @@
 
 TEST(score, simple) {
   stats_t stats = {.depth = 2,
-                   .count = 2,
-                   .dirname_start = &(uchar[]){0, 1},
-                   .dirname_end = &(uchar[]){1, 0},
-                   .word_start = &(uchar[]){0, 1},
-                   .word_end = &(uchar[]){1, 0},
-                   .bad_case = &(uchar[]){1, 2}};
-  int ans = score(&stats);
+                   .dirname_start = &(uint[]){0, 1},
+                   .dirname_end = &(uint[]){1, 0},
+                   .word_start = &(uint[]){0, 1},
+                   .word_end = &(uint[]){1, 0},
+                   .bad_case = &(uint[]){1, 2}};
+  int ans = score(&stats, 2);
   assert_int_equal(ans, 83750);
 }
 
 TEST(score, one) {
   stats_t stats = {.depth = 1,
-                   .count = 1,
-                   .dirname_start = &(uchar[]){0},
-                   .dirname_end = &(uchar[]){1},
-                   .word_start = &(uchar[]){0},
-                   .word_end = &(uchar[]){1},
-                   .bad_case = &(uchar[]){1}};
-  int ans = score(&stats);
+                   .dirname_start = &(uint[]){0},
+                   .dirname_end = &(uint[]){1},
+                   .word_start = &(uint[]){0},
+                   .word_end = &(uint[]){1},
+                   .bad_case = &(uint[]){1}};
+  int ans = score(&stats, 1);
   assert_int_equal(ans, 91000);
 }
 

@@ -7,183 +7,183 @@ TEST(depth, suffix_slash) { assert_int_equal(depth("p/t/e/"), 3); }
 TEST(depth, root) { assert_int_equal(depth("/"), 0); }
 
 TEST(dirname_start_distance, relative_start) {
-  uchar node_is[] = {0, 1};
-  uchar ret;
+  uint node_is[] = {0, 1};
+  uint ret;
   dirname_start_distance(node_is, 2, &ret, "pr");
   assert_int_equal(ret, 0);
 }
 TEST(dirname_start_distance, relative_middle) {
-  uchar node_is[] = {2, 3};
-  uchar ret;
+  uint node_is[] = {2, 3};
+  uint ret;
   dirname_start_distance(node_is, 2, &ret, "test");
   assert_int_equal(ret, 2);
 }
 TEST(dirname_start_distance, absolute_start) {
-  uchar node_is[] = {1, 2};
-  uchar ret;
+  uint node_is[] = {1, 2};
+  uint ret;
   dirname_start_distance(node_is, 2, &ret, "/p");
   assert_int_equal(ret, 0);
 }
 TEST(dirname_start_distance, multiple_alternating) {
-  uchar node_is[] = {0, 1, 4, 5, 7, 8};
-  uchar ans[3] = {0, 1, 0};
-  uchar ret[3];
+  uint node_is[] = {0, 1, 4, 5, 7, 8};
+  uint ans[3] = {0, 1, 0};
+  uint ret[3];
   dirname_start_distance(node_is, 6, ret, "pr/prr/pp");
   assert_memory_equal(ret, ans, 3);
 }
 
 TEST(dirname_end_distance, relative_end) {
-  uchar node_is[] = {1, 3};
-  uchar ret;
+  uint node_is[] = {1, 3};
+  uint ret;
   dirname_end_distance(node_is, 2, &ret, "ppr");
   assert_int_equal(ret, 0);
 }
 TEST(dirname_end_distance, relative_middle) {
-  uchar node_is[] = {1, 2};
-  uchar ret;
+  uint node_is[] = {1, 2};
+  uint ret;
   dirname_end_distance(node_is, 2, &ret, "test");
   assert_int_equal(ret, 2);
 }
 TEST(dirname_end_distance, multiple_alternating) {
-  uchar node_is[] = {1, 2, 4, 5, 8, 9};
-  uchar ans[3] = {0, 1, 0};
-  uchar ret[3];
+  uint node_is[] = {1, 2, 4, 5, 8, 9};
+  uint ans[3] = {0, 1, 0};
+  uint ret[3];
   dirname_end_distance(node_is, 6, ret, "pr/prr/pp");
   assert_memory_equal(ret, ans, 3);
 }
 
 TEST(word_start_distance, relative_start) {
-  uchar node_is[] = {0, 1};
-  uchar ret;
+  uint node_is[] = {0, 1};
+  uint ret;
   word_start_distance(node_is, 2, &ret, "pr");
   assert_int_equal(ret, 0);
 }
 TEST(word_start_distance, relative_middle) {
-  uchar node_is[] = {2, 3};
-  uchar ret;
+  uint node_is[] = {2, 3};
+  uint ret;
   word_start_distance(node_is, 2, &ret, "test");
   assert_int_equal(ret, 2);
 }
 TEST(word_start_distance, absolute_start) {
-  uchar node_is[] = {1, 2};
-  uchar ret;
+  uint node_is[] = {1, 2};
+  uint ret;
   word_start_distance(node_is, 2, &ret, "/p");
   assert_int_equal(ret, 0);
 }
 TEST(word_start_distance, multiple_alternating) {
-  uchar node_is[] = {0, 1, 4, 5, 7, 8};
-  uchar ans[3] = {0, 1, 0};
-  uchar ret[3];
+  uint node_is[] = {0, 1, 4, 5, 7, 8};
+  uint ans[3] = {0, 1, 0};
+  uint ret[3];
   word_start_distance(node_is, 6, ret, "pr/prr-pp");
   assert_memory_equal(ret, ans, 3);
 }
 TEST(word_start_distance, a) {
-  uchar node_is[] = {1, 2};
-  uchar ret;
+  uint node_is[] = {1, 2};
+  uint ret;
   word_start_distance(node_is, 2, &ret, "/a");
   assert_int_equal(ret, 0);
 }
 TEST(word_start_distance, A) {
-  uchar node_is[] = {1, 2};
-  uchar ret;
+  uint node_is[] = {1, 2};
+  uint ret;
   word_start_distance(node_is, 2, &ret, "/A");
   assert_int_equal(ret, 0);
 }
 TEST(word_start_distance, z) {
-  uchar node_is[] = {1, 2};
-  uchar ret;
+  uint node_is[] = {1, 2};
+  uint ret;
   word_start_distance(node_is, 2, &ret, "/z");
   assert_int_equal(ret, 0);
 }
 TEST(word_start_distance, Z) {
-  uchar node_is[] = {1, 2};
-  uchar ret;
+  uint node_is[] = {1, 2};
+  uint ret;
   word_start_distance(node_is, 2, &ret, "/Z");
   assert_int_equal(ret, 0);
 }
 
 TEST(word_end_distance, relative_end) {
-  uchar node_is[] = {1, 2};
-  uchar ret;
+  uint node_is[] = {1, 2};
+  uint ret;
   word_end_distance(node_is, 2, &ret, "pr");
   assert_int_equal(ret, 0);
 }
 TEST(word_end_distance, relative_middle) {
-  uchar node_is[] = {1, 2};
-  uchar ret;
+  uint node_is[] = {1, 2};
+  uint ret;
   word_end_distance(node_is, 2, &ret, "test");
   assert_int_equal(ret, 2);
 }
 TEST(word_end_distance, relative_start) {
-  uchar node_is[] = {0, 1};
-  uchar ret;
+  uint node_is[] = {0, 1};
+  uint ret;
   word_end_distance(node_is, 2, &ret, "test");
   assert_int_equal(ret, 3);
 }
 TEST(word_end_distance, multiple_alternating) {
-  uchar node_is[] = {1, 2, 4, 5, 8, 9};
-  uchar ans[3] = {0, 1, 0};
-  uchar ret[3];
+  uint node_is[] = {1, 2, 4, 5, 8, 9};
+  uint ans[3] = {0, 1, 0};
+  uint ret[3];
   word_end_distance(node_is, 6, ret, "pr?prr/pp");
   assert_memory_equal(ret, ans, 3);
 }
 TEST(word_end_distance, a) {
-  uchar node_is[] = {0, 1};
-  uchar ret;
+  uint node_is[] = {0, 1};
+  uint ret;
   word_end_distance(node_is, 2, &ret, "aa/");
   assert_int_equal(ret, 1);
 }
 TEST(word_end_distance, A) {
-  uchar node_is[] = {0, 1};
-  uchar ret;
+  uint node_is[] = {0, 1};
+  uint ret;
   word_end_distance(node_is, 2, &ret, "AA/");
   assert_int_equal(ret, 1);
 }
 TEST(word_end_distance, z) {
-  uchar node_is[] = {0, 1};
-  uchar ret;
+  uint node_is[] = {0, 1};
+  uint ret;
   word_end_distance(node_is, 2, &ret, "zz/");
   assert_int_equal(ret, 1);
 }
 TEST(word_end_distance, Z) {
-  uchar node_is[] = {0, 1};
-  uchar ret;
+  uint node_is[] = {0, 1};
+  uint ret;
   word_end_distance(node_is, 2, &ret, "ZZ/");
   assert_int_equal(ret, 1);
 }
 
 TEST(bad_case_count, long) {
-  uchar ranges[] = {1, 4};
-  uchar ret;
+  uint ranges[] = {1, 4};
+  uint ret;
   char *expr[] = {"res"};
   bad_case_count(ranges, 2, &ret, "pressed", expr);
   assert_int_equal(ret, 0);
 }
 TEST(bad_case_count, single) {
-  uchar ranges[] = {0, 1};
-  uchar ret;
+  uint ranges[] = {0, 1};
+  uint ret;
   char *expr[] = {"t"};
   bad_case_count(ranges, 2, &ret, "test", expr);
   assert_int_equal(ret, 0);
 }
 TEST(bad_case_count, multiple) {
-  uchar ranges[] = {1, 3, 5, 6};
-  uchar ans[] = {0, 0};
-  uchar ret[2];
+  uint ranges[] = {1, 3, 5, 6};
+  uint ans[] = {0, 0};
+  uint ret[2];
   char *expr[] = {"es", "l"};
   bad_case_count(ranges, 4, ret, "test/lol", expr);
   assert_memory_equal(ret, ans, 2);
 }
 TEST(bad_case_count, half) {
-  uchar ranges[] = {0, 4, 5, 7};
-  uchar ans[] = {2, 1};
-  uchar ret[2];
+  uint ranges[] = {0, 4, 5, 7};
+  uint ans[] = {2, 1};
+  uint ret[2];
   char *expr[] = {"test", "lo"};
   bad_case_count(ranges, 4, ret, "tEsT/Lol", expr);
   assert_memory_equal(ret, ans, 2);
 }
 
-void assert_stats_equal(const stats_t *x, const stats_t *y) {
+void assert_stats_equal(const stats_t *x, const stats_t *y, uint count) {
   assert_non_null(x->dirname_start);
   assert_non_null(y->dirname_start);
   assert_non_null(x->dirname_end);
@@ -196,45 +196,40 @@ void assert_stats_equal(const stats_t *x, const stats_t *y) {
   assert_non_null(y->bad_case);
   assert_int_not_equal(x->depth, 0);
   assert_int_not_equal(y->depth, 0);
-  assert_int_not_equal(x->count, 0);
-  assert_int_not_equal(y->count, 0);
   assert_int_equal(x->depth, y->depth);
-  assert_int_equal(x->count, y->count);
-  assert_memory_equal(x->dirname_start, y->dirname_start, x->count);
-  assert_memory_equal(x->dirname_end, y->dirname_end, x->count);
-  assert_memory_equal(x->word_start, y->word_start, x->count);
-  assert_memory_equal(x->word_end, y->word_end, x->count);
-  assert_memory_equal(x->bad_case, y->bad_case, x->count);
+  assert_memory_equal(x->dirname_start, y->dirname_start, count);
+  assert_memory_equal(x->dirname_end, y->dirname_end, count);
+  assert_memory_equal(x->word_start, y->word_start, count);
+  assert_memory_equal(x->word_end, y->word_end, count);
+  assert_memory_equal(x->bad_case, y->bad_case, count);
 }
 
 TEST(stat, single) {
   stats_t stats = STAT_INIT(1);
-  uchar ranges[2] = {1, 5};
+  uint ranges[2] = {1, 5};
   stats_t ans = {.depth = 1,
-                 .count = 1,
-                 .dirname_start = &(uchar[]){1},
-                 .dirname_end = &(uchar[]){0},
-                 .word_start = &(uchar[]){1},
-                 .word_end = &(uchar[]){0},
-                 .bad_case = &(uchar[]){0}};
+                 .dirname_start = &(uint[]){1},
+                 .dirname_end = &(uint[]){0},
+                 .word_start = &(uint[]){1},
+                 .word_end = &(uint[]){0},
+                 .bad_case = &(uint[]){0}};
   char *expr[] = {"test"};
   stat(&stats, ranges, 2, expr, "ttest");
-  assert_stats_equal(&stats, &ans);
+  assert_stats_equal(&stats, &ans, 1);
 }
 
 TEST(stat, multiple) {
   stats_t stats = STAT_INIT(3);
-  uchar ranges[] = {1, 5, 8, 10, 11, 12};
+  uint ranges[] = {1, 5, 8, 10, 11, 12};
   stats_t ans = {.depth = 4,
-                 .count = 3,
-                 .dirname_start = (uchar[]){1, 0, 0},
-                 .dirname_end = (uchar[]){0, 0, 3},
-                 .word_start = (uchar[]){1, 0, 0},
-                 .word_end = (uchar[]){0, 0, 3},
-                 .bad_case = (uchar[]){1, 0, 0}};
+                 .dirname_start = (uint[]){1, 0, 0},
+                 .dirname_end = (uint[]){0, 0, 3},
+                 .word_start = (uint[]){1, 0, 0},
+                 .word_end = (uint[]){0, 0, 3},
+                 .bad_case = (uint[]){1, 0, 0}};
   char *expr[] = {"Test", "ro/a"};
   stat(&stats, ranges, 6, expr, "ttest/p/ro/afgd");
-  assert_stats_equal(&stats, &ans);
+  assert_stats_equal(&stats, &ans, 3);
 }
 
 int main(void) {

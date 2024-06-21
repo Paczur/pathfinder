@@ -14,6 +14,6 @@
 
 #define SCORE_LOSS 4
 
-uint score(const stats_t *stats);
+uint score(const stats_t *stats, uint count);
 
 #endif
