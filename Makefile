@@ -50,11 +50,11 @@ check:
 clean:
 	rm -rf $(BIN) $(BUILD) $(CCACHE_DIR)
 
-binaries: $(BIN)/pathfinder
+binaries: $(BIN)/pf
 
 tests: $(BIN_TESTS)
 
-$(BIN)/pathfinder: $(OBJECTS) | $(BIN)
+$(BIN)/pf: $(OBJECTS) | $(BIN)
 	$(CC) $(CFLAGS) -MMD -MP -o $@ $^
 
 $(TEST_DIR)/%.test: $(SRC)/%.test.c $(SRC)/%.c | $(TEST_DIR)
