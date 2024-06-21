@@ -48,6 +48,14 @@ void stats_print(const stats_t *stats, uint count) {
   printf("}");
 }
 
+void resn_free(resn_t *node) {
+  free(node->path);
+#ifndef NDEBUG
+  stats_free(&node->stats);
+#endif
+  free(node);
+}
+
 void resn_print(const resn_t *node, uint count) {
   (void)count;
   printf("{path: \"%s\", score: %u", node->path, node->score);
@@ -56,6 +64,16 @@ void resn_print(const resn_t *node, uint count) {
   stats_print(&node->stats, count);
 #endif
   printf(", next: %p}", node->next);
+}
+
+void resv_print(const resv_t *val, uint count) {
+  (void)count;
+  printf("{path: \"%s\", score: %u", val->path, val->score);
+#ifndef NDEBUG
+  printf(", stats: ");
+  stats_print(&val->stats, count);
+#endif
+  printf("}");
 }
 
 void resl_add(resl_t *list, resn_t *node) {

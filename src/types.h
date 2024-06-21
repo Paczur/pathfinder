@@ -26,6 +26,15 @@ typedef struct stats_t {
 void stats_alloc(stats_t *stats, uint node_count);
 void stats_free(stats_t *stats);
 
+typedef struct resv_t {
+  char *path;
+  uint score;
+#ifndef NDEBUG
+  stats_t stats;
+#endif
+} resv_t;
+void resv_print(const resv_t *val, uint count);
+
 typedef struct resn_t {
   char *path;
   uint score;
@@ -34,6 +43,7 @@ typedef struct resn_t {
 #endif
   struct resn_t *next;
 } resn_t;
+void resn_print(const resn_t *node, uint count);
 
 typedef struct resl_t {
   resn_t *head;
