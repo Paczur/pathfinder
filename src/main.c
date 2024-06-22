@@ -7,11 +7,29 @@
 #include "score.h"
 #include "res.h"
 
-uint *ranges;
-resl_t list;
-resa_t arr;
+#define HELP_MSG                                               \
+  "Usage: pf [OPTION]... EXPR...\n"                            \
+  "Find path(s) best matching EXPR using substring matches.\n" \
+  "\n"                                                         \
+  "General options:\n"                                         \
+  "-h, --help          Show help\n"                            \
+  "-m, --max-matches   Number of matches to print (default 30)"
 
-uint node_count(const char *const *expr, uint len) {
+uint *ranges;
+bool limited = true;
+bool interactive = false;
+resl_t list;
+resa_t arr = {.size = 0, .limit = 1};
+
+static void cleanup(void) {
+  if(limited) {
+    resa_free(&arr);
+  } else {
+    resl_free(&list);
+  }
+}
+
+static uint node_count(const char *const *expr, uint len) {
   uint res = len;
   for(size_t i = 0; i < len; i++) {
     for(size_t j = 0; expr[i][j]; j++) {
@@ -21,7 +39,8 @@ uint node_count(const char *const *expr, uint len) {
   return res;
 }
 
-void handleinf(const char *str, const char *const *expr, uint len, uint count) {
+static void handleinf(const char *str, const char *const *expr, uint len,
+                      uint count) {
   resn_t *new;
 #ifdef NDEBUG
   stats_t stats;
@@ -44,13 +63,15 @@ void handleinf(const char *str, const char *const *expr, uint len, uint count) {
   }
 }
 
-void handle(const char *str, const char *const *expr, uint len, uint count) {
+static void handle(const char *str, const char *const *expr, uint len,
+                   uint count) {
   resv_t new;
 #ifdef NDEBUG
   stats_t stats;
 #endif
-
   if(matches(ranges, str, expr, len)) {
+    new.path = malloc(strlen(str) + 1);
+    strcpy(new.path, str);
 #ifndef NDEBUG
     stats_alloc(&new.stats, len);
     stat(&new.stats, ranges, len * 2, expr, str);
@@ -60,41 +81,79 @@ void handle(const char *str, const char *const *expr, uint len, uint count) {
     stat(&stats, ranges, len * 2, expr, str);
     new.score = score(&stats, count);
     stats_free(&stats);
-    new.path = malloc(strlen(str) + 1);
-    strcpy(new.path, str);
 #endif
-    resa_add(&arr, &new);
+    if(!resa_add(&arr, &new)) {
+      free(new.path);
+#ifndef NDEBUG
+      stats_free(&new.stats);
+#endif
+    }
   }
 }
 
-int main(int argc, const char *const argv[]) {
-  DIR *dr;
-  uint nc;
+static void find_paths(const char *const *expr, uint len, uint count) {
   struct dirent *de;
-  if(argc < 2) {
-    puts("HELP MSG HERE");
-    return 1;
-  }
-  nc = node_count(argv + 1, argc - 1);
-  dr = opendir(".");
+  DIR *dr = opendir(".");
   if(!dr) {
     puts("Couldn't open directory");
-    return 1;
+    exit(1);
   }
-
-  ranges = malloc((argc - 1) * 2 * sizeof(uint));
-  arr.limit = 30;
-  arr.arr = calloc(30, sizeof(resv_t));
-
   while((de = readdir(dr))) {
     if(!strcmp(de->d_name, "..") || !strcmp(de->d_name, ".")) continue;
     if(de->d_type == DT_DIR) {
-      handleinf(de->d_name, argv + 1, argc - 1, nc);
-      handle(de->d_name, argv + 1, argc - 1, nc);
+      if(limited) {
+        handle(de->d_name, expr, len, count);
+      } else {
+        handleinf(de->d_name, expr, len, count);
+      }
     }
   }
   closedir(dr);
-  // resl_print(&list, nc);
-  resa_print(&arr, nc);
+}
+
+int main(int argc, const char *const argv[]) {
+  uint nc;
+  long long t;
+  uint off = 1;
+  if(argc < 2) goto error;
+  for(; off < (uint)argc; off++) {
+    if(argv[off][0] != '-') break;
+    if(!strcmp(argv[off], "-h") || !strcmp(argv[off], "--help")) {
+      puts(HELP_MSG);
+      goto cleanup;
+    } else if(!strcmp(argv[off], "-m") || !strcmp(argv[off], "--max-matches")) {
+      if(off + 1 >= (uint)argc || !sscanf(argv[off + 1], "%lld", &t)) {
+        goto error;
+      }
+      if(t < 1) {
+        limited = false;
+      } else {
+        arr.limit = (uint)t;
+      }
+      off++;
+    }
+  }
+  nc = node_count(argv + off, argc - off);
+
+  ranges = malloc((argc - 1) * 2 * sizeof(uint));
+  if(limited) arr.arr = calloc(arr.limit, sizeof(resv_t));
+  find_paths(argv + off, argc - off, nc);
+
+  if(limited) {
+    resa_print(&arr, nc);
+  } else {
+    resl_print(&list, nc);
+  }
+  puts("");
+
+cleanup:
+  cleanup();
+  free(ranges);
   return 0;
+
+error:
+  puts(HELP_MSG);
+  cleanup();
+  free(ranges);
+  return 1;
 }

@@ -3,6 +3,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+void resv_free(resv_t *val) {
+  free(val->path);
+#ifndef NDEBUG
+  stats_free(&val->stats);
+#endif
+}
+
 void resv_print(const resv_t *val, uint count) {
   (void)count;
   printf("{path: \"%s\", score: %u", val->path, val->score);
@@ -18,7 +25,6 @@ void resn_free(resn_t *node) {
 #ifndef NDEBUG
   stats_free(&node->stats);
 #endif
-  free(node);
 }
 
 void resn_print(const resn_t *node, uint count) {
@@ -31,25 +37,41 @@ void resn_print(const resn_t *node, uint count) {
   printf(", next: %p}", node->next);
 }
 
-void resa_add(resa_t *arr, resv_t *val) {
+bool resa_add(resa_t *arr, resv_t *val) {
   for(size_t i = 0; i < arr->limit; i++) {
     if(arr->arr[i].score < val->score) {
+      if(arr->size == arr->limit) {
+        free(arr->arr[arr->size - 1].path);
+#ifndef NDEBUG
+        stats_free(&arr->arr[arr->size - 1].stats);
+#endif
+      }
       arr->size = (arr->size == arr->limit) ? arr->limit : arr->size + 1;
       memmove(arr->arr + i + 1, arr->arr + i,
               (arr->size - i - 1) * sizeof(resv_t));
       arr->arr[i] = *val;
-      break;
+      return true;
     }
   }
+  return false;
+}
+
+void resa_free(resa_t *arr) {
+  for(size_t i = 0; i < arr->size; i++) {
+    resv_free(arr->arr + i);
+  }
+  free(arr->arr);
 }
 
 void resa_print(const resa_t *arr, uint count) {
   printf("[");
-  for(size_t i = 0; i < arr->size - 1; i++) {
-    resv_print(arr->arr + i, count);
-    puts(",");
+  if(arr->size > 0) {
+    for(size_t i = 0; i < arr->size - 1; i++) {
+      resv_print(arr->arr + i, count);
+      puts(",");
+    }
+    resv_print(arr->arr + arr->size - 1, count);
   }
-  resv_print(arr->arr + arr->size - 1, count);
   printf("]");
 }
 
@@ -79,6 +101,18 @@ void resl_add(resl_t *list, resn_t *node) {
   node->next = NULL;
 }
 
+void resl_free(resl_t *list) {
+  resn_t *n = list->head;
+  resn_t *t;
+  while(n != list->tail) {
+    t = n->next;
+    resn_free(n);
+    free(n);
+    n = t;
+  }
+  resn_free(n);
+}
+
 void resl_print(const resl_t *list, uint count) {
   resn_t *n = list->head;
   printf("{head: %p, tail: %p,\n", list->head, list->tail);
@@ -88,5 +122,5 @@ void resl_print(const resl_t *list, uint count) {
     n = n->next;
   }
   resn_print(n, count);
-  puts("}");
+  printf("}");
 }

@@ -1,5 +1,6 @@
 ## Options
 * -h, --help = Show help
+* -m, --max-matches = number of matches to print (default 1)
 
 ### Scoring options
 * --ignore-dotfiles = Skip dotfiles
@@ -11,10 +12,6 @@
 * -r, --reverse-sort = Reverse result of sorting
 * -d, --dirs-first = Dirs first
 * -f, --files-first = Files first
-
-### Interactive options
-* -i = Enables interactive choice
-* -m, --max-matches = number of matches to print (default 30)
 
 ## Syntax
 pf [OPTIONS] path [path...]
