@@ -39,7 +39,7 @@ static uint node_count(const char *const *expr, uint len) {
   return res;
 }
 
-static void handleinf(const char *str, const char *const *expr, uint len,
+static uint handleinf(const char *str, const char *const *expr, uint len,
                       uint count) {
   resn_t *new;
 #ifdef NDEBUG
@@ -60,10 +60,12 @@ static void handleinf(const char *str, const char *const *expr, uint len,
     stats_free(&stats);
 #endif
     resl_add(&list, new);
+    return new->score;
   }
+  return 0;
 }
 
-static void handle(const char *str, const char *const *expr, uint len,
+static uint handle(const char *str, const char *const *expr, uint len,
                    uint count) {
   resv_t new;
 #ifdef NDEBUG
@@ -87,28 +89,44 @@ static void handle(const char *str, const char *const *expr, uint len,
 #ifndef NDEBUG
       stats_free(&new.stats);
 #endif
+    } else {
+      return new.score;
     }
   }
+  return 0;
 }
 
-static void find_paths(const char *const *expr, uint len, uint count) {
+static void rec_paths(const char *const *expr, uint len, uint count,
+                      uint (*f)(const char *, const char *const *, uint, uint),
+                      char *path) {
   struct dirent *de;
-  DIR *dr = opendir(".");
+  DIR *dr = opendir(path);
+  size_t null = strlen(path);
   if(!dr) {
-    puts("Couldn't open directory");
-    exit(1);
+    printf("Couldn't open directory: %s\n", path);
+    return;
   }
   while((de = readdir(dr))) {
     if(!strcmp(de->d_name, "..") || !strcmp(de->d_name, ".")) continue;
     if(de->d_type == DT_DIR) {
-      if(limited) {
-        handle(de->d_name, expr, len, count);
+      sprintf(path + null, "/%s", de->d_name);
+      if(arr.limit == 1) {
+        if(SCORE_BASE == f(path + 2, expr, len, count)) break;
       } else {
-        handleinf(de->d_name, expr, len, count);
+        f(path + 2, expr, len, count);
       }
+      rec_paths(expr, len, count, f, path);
+      path[null] = 0;
     }
   }
   closedir(dr);
+}
+
+static void find_paths(const char *const *expr, uint len, uint count) {
+  uint (*f)(const char *, const char *const *, uint, uint) =
+    (limited) ? handle : handleinf;
+  char path[512] = ".";
+  rec_paths(expr, len, count, f, path);
 }
 
 int main(int argc, const char *const argv[]) {
@@ -140,11 +158,10 @@ int main(int argc, const char *const argv[]) {
   find_paths(argv + off, argc - off, nc);
 
   if(limited) {
-    resa_print(&arr, nc);
+    resa_path_print(&arr);
   } else {
-    resl_print(&list, nc);
+    resl_path_print(&list);
   }
-  puts("");
 
 cleanup:
   cleanup();

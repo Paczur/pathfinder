@@ -38,7 +38,7 @@ void resn_print(const resn_t *node, uint count) {
 }
 
 bool resa_add(resa_t *arr, resv_t *val) {
-  for(size_t i = 0; i < arr->limit; i++) {
+  for(size_t i = 0; i < arr->size; i++) {
     if(arr->arr[i].score < val->score) {
       if(arr->size == arr->limit) {
         free(arr->arr[arr->size - 1].path);
@@ -52,6 +52,11 @@ bool resa_add(resa_t *arr, resv_t *val) {
       arr->arr[i] = *val;
       return true;
     }
+  }
+  if(arr->size < arr->limit) {
+    arr->arr[arr->size] = *val;
+    arr->size = (arr->size == arr->limit) ? arr->limit : arr->size + 1;
+    return true;
   }
   return false;
 }
@@ -73,6 +78,12 @@ void resa_print(const resa_t *arr, uint count) {
     resv_print(arr->arr + arr->size - 1, count);
   }
   printf("]");
+}
+
+void resa_path_print(const resa_t *arr) {
+  for(size_t i = 0; i < arr->size; i++) {
+    printf("%s\n", arr->arr[i].path);
+  }
 }
 
 void resl_add(resl_t *list, resn_t *node) {
@@ -123,4 +134,13 @@ void resl_print(const resl_t *list, uint count) {
   }
   resn_print(n, count);
   printf("}");
+}
+
+void resl_path_print(const resl_t *list) {
+  resn_t *n = list->head;
+  while(n != list->tail) {
+    printf("%s\n", n->path);
+    n = n->next;
+  }
+  printf("%s\n", n->path);
 }
