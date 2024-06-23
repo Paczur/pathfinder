@@ -125,6 +125,67 @@ static void bad_case_count(const uint *ranges, uint rangesl, uint *ret,
   }
 }
 
+static void dotfile(const uint *ranges, uint rangesl, bool *ret,
+                    const char *str, uint *dirname_start) {
+  ret[0] = str[ranges[0] - dirname_start[0]] == '.';
+  for(size_t i = 2; i < rangesl / 2; i++) {
+    ret[i] = str[ranges[i * 2] - dirname_start[i]] == '.';
+  }
+}
+
+void stats_alloc(stats_t *stats, uint node_count) {
+  stats->depth = 0;
+  stats->dirname_start = malloc(node_count * sizeof(uint));
+  stats->dirname_end = malloc(node_count * sizeof(uint));
+  stats->word_start = malloc(node_count * sizeof(uint));
+  stats->word_end = malloc(node_count * sizeof(uint));
+  stats->bad_case = malloc(node_count * sizeof(uint));
+  stats->dotfile = malloc(node_count * sizeof(bool));
+}
+
+void stats_free(stats_t *stats) {
+  free(stats->dirname_start);
+  free(stats->dirname_end);
+  free(stats->word_start);
+  free(stats->word_end);
+  free(stats->bad_case);
+  free(stats->dotfile);
+}
+
+void stats_print(const stats_t *stats, uint count) {
+  printf("{depth: %u, dirname_start: [", stats->depth);
+  for(size_t i = 0; i < count - 1; i++) {
+    printf("%u, ", stats->dirname_start[i]);
+  }
+  printf("%u]", stats->dirname_start[count - 1]);
+  printf(", dirname_end: [");
+  for(size_t i = 0; i < count - 1; i++) {
+    printf("%u, ", stats->dirname_end[i]);
+  }
+  printf("%u]", stats->dirname_end[count - 1]);
+  printf(", word_start: [");
+  for(size_t i = 0; i < count - 1; i++) {
+    printf("%u, ", stats->word_start[i]);
+  }
+  printf("%u]", stats->word_start[count - 1]);
+  printf(", word_end: [");
+  for(size_t i = 0; i < count - 1; i++) {
+    printf("%u, ", stats->word_end[i]);
+  }
+  printf("%u]", stats->word_end[count - 1]);
+  printf(", bad_case: [");
+  for(size_t i = 0; i < count - 1; i++) {
+    printf("%u, ", stats->bad_case[i]);
+  }
+  printf("%u]", stats->dotfile[count - 1]);
+  printf(", dotfile: [");
+  for(size_t i = 0; i < count - 1; i++) {
+    printf(stats->dotfile[i] ? "true, " : "false, ");
+  }
+  printf(stats->dotfile[count - 1] ? "true]" : "false]");
+  printf("}");
+}
+
 void stat(stats_t *stats, uint *ranges, uint rangesl, const char *const *expr,
           const char *str) {
   assert(ranges);
@@ -137,6 +198,7 @@ void stat(stats_t *stats, uint *ranges, uint rangesl, const char *const *expr,
   assert(stats->word_start);
   assert(stats->word_end);
   assert(stats->bad_case);
+  assert(stats->dotfile);
 
   stats->depth = depth(str);
 
@@ -145,4 +207,5 @@ void stat(stats_t *stats, uint *ranges, uint rangesl, const char *const *expr,
   word_start_distance(ranges, rangesl, stats->word_start, str);
   word_end_distance(ranges, rangesl, stats->word_end, str);
   bad_case_count(ranges, rangesl, stats->bad_case, str, expr);
+  dotfile(ranges, rangesl, stats->dotfile, str, stats->dirname_start);
 }

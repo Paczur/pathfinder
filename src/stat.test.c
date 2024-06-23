@@ -197,11 +197,15 @@ void assert_stats_equal(const stats_t *x, const stats_t *y, uint count) {
   assert_int_not_equal(x->depth, 0);
   assert_int_not_equal(y->depth, 0);
   assert_int_equal(x->depth, y->depth);
-  assert_memory_equal(x->dirname_start, y->dirname_start, count);
-  assert_memory_equal(x->dirname_end, y->dirname_end, count);
-  assert_memory_equal(x->word_start, y->word_start, count);
-  assert_memory_equal(x->word_end, y->word_end, count);
-  assert_memory_equal(x->bad_case, y->bad_case, count);
+  assert_memory_equal(x->dirname_start, y->dirname_start,
+                      count * sizeof(x->dirname_start[0]));
+  assert_memory_equal(x->dirname_end, y->dirname_end,
+                      count * sizeof(x->dirname_end[0]));
+  assert_memory_equal(x->word_start, y->word_start,
+                      count * sizeof(x->word_start[0]));
+  assert_memory_equal(x->word_end, y->word_end, count * sizeof(x->word_end[0]));
+  assert_memory_equal(x->bad_case, y->bad_case, count * sizeof(x->bad_case[0]));
+  assert_memory_equal(x->dotfile, y->dotfile, count * sizeof(x->dotfile[0]));
 }
 
 TEST(stat, single) {
@@ -212,7 +216,8 @@ TEST(stat, single) {
                  .dirname_end = &(uint[]){0},
                  .word_start = &(uint[]){1},
                  .word_end = &(uint[]){0},
-                 .bad_case = &(uint[]){0}};
+                 .bad_case = &(uint[]){0},
+                 .dotfile = &(bool[]){false}};
   char *expr[] = {"test"};
   stat(&stats, ranges, 2, expr, "ttest");
   assert_stats_equal(&stats, &ans, 1);
@@ -226,7 +231,8 @@ TEST(stat, multiple) {
                  .dirname_end = (uint[]){0, 0, 3},
                  .word_start = (uint[]){1, 0, 0},
                  .word_end = (uint[]){0, 0, 3},
-                 .bad_case = (uint[]){1, 0, 0}};
+                 .bad_case = (uint[]){1, 0, 0},
+                 .dotfile = &(bool[]){false}};
   char *expr[] = {"Test", "ro/a"};
   stat(&stats, ranges, 6, expr, "ttest/p/ro/afgd");
   assert_stats_equal(&stats, &ans, 3);
