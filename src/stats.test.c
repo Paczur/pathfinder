@@ -1,4 +1,4 @@
-#include "stat.c"
+#include "stats.c"
 #include "test.h"
 
 TEST(depth, relative) { assert_int_equal(depth("p"), 1); }
@@ -208,8 +208,8 @@ void assert_stats_equal(const stats_t *x, const stats_t *y, uint count) {
   assert_memory_equal(x->dotfile, y->dotfile, count * sizeof(x->dotfile[0]));
 }
 
-TEST(stat, single) {
-  stats_t stats = STAT_INIT(1);
+TEST(stats, single) {
+  stats_t st = STATS_INIT(1);
   uint ranges[2] = {1, 5};
   stats_t ans = {.depth = 1,
                  .dirname_start = &(uint[]){1},
@@ -219,12 +219,12 @@ TEST(stat, single) {
                  .bad_case = &(uint[]){0},
                  .dotfile = &(bool[]){false}};
   char *expr[] = {"test"};
-  stat(&stats, ranges, 2, expr, "ttest");
-  assert_stats_equal(&stats, &ans, 1);
+  stats(&st, ranges, 2, expr, "ttest");
+  assert_stats_equal(&st, &ans, 1);
 }
 
-TEST(stat, multiple) {
-  stats_t stats = STAT_INIT(3);
+TEST(stats, multiple) {
+  stats_t st = STATS_INIT(3);
   uint ranges[] = {1, 5, 8, 10, 11, 12};
   stats_t ans = {.depth = 4,
                  .dirname_start = (uint[]){1, 0, 0},
@@ -234,8 +234,8 @@ TEST(stat, multiple) {
                  .bad_case = (uint[]){1, 0, 0},
                  .dotfile = &(bool[]){false}};
   char *expr[] = {"Test", "ro/a"};
-  stat(&stats, ranges, 6, expr, "ttest/p/ro/afgd");
-  assert_stats_equal(&stats, &ans, 3);
+  stats(&st, ranges, 6, expr, "ttest/p/ro/afgd");
+  assert_stats_equal(&st, &ans, 3);
 }
 
 int main(void) {
@@ -271,9 +271,8 @@ int main(void) {
     ADD(bad_case_count, single),
     ADD(bad_case_count, multiple),
     ADD(bad_case_count, half),
-    ADD(stat, single),
-    ADD(stat, multiple),
-    // Make tests for stat function
+    ADD(stats, single),
+    ADD(stats, multiple),
   };
   return cmocka_run_group_tests(tests, NULL, NULL);
 }

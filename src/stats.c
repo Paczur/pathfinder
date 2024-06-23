@@ -1,4 +1,4 @@
-#include "stat.h"
+#include "stats.h"
 #include "match.h"
 #include <assert.h>
 #include <stdlib.h>
@@ -186,8 +186,8 @@ void stats_print(const stats_t *stats, uint count) {
   printf("}");
 }
 
-void stat(stats_t *stats, uint *ranges, uint rangesl, const char *const *expr,
-          const char *str) {
+void stats(stats_t *stats, uint *ranges, uint rangesl, const char *const *expr,
+           const char *str) {
   assert(ranges);
   assert(rangesl > 0);
   assert(str);

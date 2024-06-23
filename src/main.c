@@ -3,9 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "match.h"
-#include "stat.h"
+#include "stats.h"
 #include "score.h"
 #include "res.h"
+#include <sys/stat.h>
 
 #define HELP_MSG                                                  \
   "Usage: pf [OPTION]... EXPR...\n"                               \
@@ -17,6 +18,8 @@
   "-v, --verbose       Print errors to stderr"
 
 uint *ranges;
+struct stat sstat;
+stats_t st;
 bool unlimited;
 bool interactive;
 bool verbose;
@@ -44,22 +47,17 @@ static uint node_count(const char *const *expr, uint len) {
 static uint handleinf(const char *str, const char *const *expr, uint len,
                       uint count) {
   resn_t *new;
-#ifdef NDEBUG
-  stats_t stats;
-#endif
   if(matches(ranges, str, expr, len)) {
     new = malloc(sizeof(resn_t));
     new->path = malloc(strlen(str) + 1);
     strcpy(new->path, str);
 #ifndef NDEBUG
     stats_alloc(&new->stats, len);
-    stat(&new->stats, ranges, len * 2, expr, str);
+    stats(&new->stats, ranges, len * 2, expr, str);
     new->score = score(&new->stats, count);
 #else
-    stats_alloc(&stats, len);
-    stat(&stats, ranges, len * 2, expr, str);
-    new->score = score(&stats, count);
-    stats_free(&stats);
+    stats(&st, ranges, len * 2, expr, str);
+    new->score = score(&st, count);
 #endif
     resl_add(&list, new);
     return new->score;
@@ -70,21 +68,16 @@ static uint handleinf(const char *str, const char *const *expr, uint len,
 static uint handle(const char *str, const char *const *expr, uint len,
                    uint count) {
   resv_t new;
-#ifdef NDEBUG
-  stats_t stats;
-#endif
   if(matches(ranges, str, expr, len)) {
     new.path = malloc(strlen(str) + 1);
     strcpy(new.path, str);
 #ifndef NDEBUG
     stats_alloc(&new.stats, len);
-    stat(&new.stats, ranges, len * 2, expr, str);
+    stats(&new.stats, ranges, len * 2, expr, str);
     new.score = score(&new.stats, count);
 #else
-    stats_alloc(&stats, len);
-    stat(&stats, ranges, len * 2, expr, str);
-    new.score = score(&stats, count);
-    stats_free(&stats);
+    stats(&st, ranges, len * 2, expr, str);
+    new.score = score(&st, count);
 #endif
     if(!resa_add(&arr, &new)) {
       free(new.path);
@@ -110,14 +103,19 @@ static void rec_paths(const char *const *expr, uint len, uint count,
   }
   while((de = readdir(dr))) {
     if(!strcmp(de->d_name, "..") || !strcmp(de->d_name, ".")) continue;
-    if(de->d_type == DT_DIR) {
+    if(de->d_type == DT_LNK || de->d_type == DT_DIR) {
       sprintf(path + null, "/%s", de->d_name);
+      if(de->d_type == DT_LNK &&
+         (stat(path, &sstat) || !S_ISDIR(sstat.st_mode))) {
+        goto next;
+      }
       if(arr.limit == 1) {
         if(SCORE_BASE == f(path + 2, expr, len, count)) break;
       } else {
         f(path + 2, expr, len, count);
       }
-      rec_paths(expr, len, count, f, path);
+      if(de->d_type == DT_DIR) rec_paths(expr, len, count, f, path);
+    next:
       path[null] = 0;
     }
   }
@@ -159,7 +157,9 @@ int main(int argc, const char *const argv[]) {
 
   ranges = malloc((argc - 1) * 2 * sizeof(uint));
   if(!unlimited) arr.arr = calloc(arr.limit, sizeof(resv_t));
+  stats_alloc(&st, argc - off);
   find_paths(argv + off, argc - off, nc);
+  stats_free(&st);
 
 #ifndef NDEBUG
   if(unlimited) {

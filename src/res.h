@@ -2,7 +2,7 @@
 #define H_RES
 
 #include "types.h"
-#include "stat.h"
+#include "stats.h"
 
 typedef struct resv_t {
   char *path;
