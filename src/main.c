@@ -7,25 +7,27 @@
 #include "score.h"
 #include "res.h"
 
-#define HELP_MSG                                               \
-  "Usage: pf [OPTION]... EXPR...\n"                            \
-  "Find path(s) best matching EXPR using substring matches.\n" \
-  "\n"                                                         \
-  "General options:\n"                                         \
-  "-h, --help          Show help\n"                            \
-  "-m, --max-matches   Number of matches to print (default 30)"
+#define HELP_MSG                                                  \
+  "Usage: pf [OPTION]... EXPR...\n"                               \
+  "Find path(s) best matching EXPR using substring matches.\n"    \
+  "\n"                                                            \
+  "General options:\n"                                            \
+  "-h, --help          Show help\n"                               \
+  "-m, --max-matches   Number of matches to print (default 30)\n" \
+  "-v, --verbose       Print errors to stderr"
 
 uint *ranges;
-bool limited = true;
-bool interactive = false;
+bool unlimited;
+bool interactive;
+bool verbose;
 resl_t list;
 resa_t arr = {.size = 0, .limit = 1};
 
 static void cleanup(void) {
-  if(limited) {
-    resa_free(&arr);
-  } else {
+  if(unlimited) {
     resl_free(&list);
+  } else {
+    resa_free(&arr);
   }
 }
 
@@ -103,7 +105,7 @@ static void rec_paths(const char *const *expr, uint len, uint count,
   DIR *dr = opendir(path);
   size_t null = strlen(path);
   if(!dr) {
-    printf("Couldn't open directory: %s\n", path);
+    if(verbose) fprintf(stderr, "Couldn't open directory: %s\n", path);
     return;
   }
   while((de = readdir(dr))) {
@@ -124,7 +126,7 @@ static void rec_paths(const char *const *expr, uint len, uint count,
 
 static void find_paths(const char *const *expr, uint len, uint count) {
   uint (*f)(const char *, const char *const *, uint, uint) =
-    (limited) ? handle : handleinf;
+    (unlimited) ? handleinf : handle;
   char path[512] = ".";
   rec_paths(expr, len, count, f, path);
 }
@@ -144,23 +146,25 @@ int main(int argc, const char *const argv[]) {
         goto error;
       }
       if(t < 1) {
-        limited = false;
+        unlimited = true;
       } else {
         arr.limit = (uint)t;
       }
       off++;
+    } else if(!strcmp(argv[off], "-v") || !strcmp(argv[off], "--verbose")) {
+      verbose = true;
     }
   }
   nc = node_count(argv + off, argc - off);
 
   ranges = malloc((argc - 1) * 2 * sizeof(uint));
-  if(limited) arr.arr = calloc(arr.limit, sizeof(resv_t));
+  if(!unlimited) arr.arr = calloc(arr.limit, sizeof(resv_t));
   find_paths(argv + off, argc - off, nc);
 
-  if(limited) {
-    resa_path_print(&arr);
-  } else {
+  if(unlimited) {
     resl_path_print(&list);
+  } else {
+    resa_path_print(&arr);
   }
 
 cleanup:

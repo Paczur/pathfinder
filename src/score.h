@@ -2,8 +2,9 @@
 #define H_SCORE
 
 #include "types.h"
+#include <limits.h>
 
-#define SCORE_BASE 100 * SCORE_PRECISION
+#define SCORE_BASE UINT_MAX
 #define SCORE_PRECISION 10000
 #define SCORE_DEPTH 10
 #define SCORE_DIRNAME_START 0.8
