@@ -11,6 +11,7 @@ typedef struct resv_t {
   stats_t stats;
 #endif
 } resv_t;
+void resv_free(resv_t *val);
 void resv_print(const resv_t *val, uint count);
 
 typedef struct resn_t {

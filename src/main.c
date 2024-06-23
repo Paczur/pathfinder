@@ -1,11 +1,11 @@
+#include "match.h"
+#include "res.h"
+#include "score.h"
+#include "stats.h"
 #include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "match.h"
-#include "stats.h"
-#include "score.h"
-#include "res.h"
 #include <sys/stat.h>
 
 #define HELP_MSG                                                  \
@@ -80,10 +80,7 @@ static uint handle(const char *str, const char *const *expr, uint len,
     new.score = score(&st, count);
 #endif
     if(!resa_add(&arr, &new)) {
-      free(new.path);
-#ifndef NDEBUG
-      stats_free(&new.stats);
-#endif
+      resv_free(&new);
     } else {
       return new.score;
     }
@@ -105,19 +102,15 @@ static void rec_paths(const char *const *expr, uint len, uint count,
     if(!strcmp(de->d_name, "..") || !strcmp(de->d_name, ".")) continue;
     if(de->d_type == DT_LNK || de->d_type == DT_DIR) {
       sprintf(path + null, "/%s", de->d_name);
-      if(de->d_type == DT_LNK &&
-         (stat(path, &sstat) || !S_ISDIR(sstat.st_mode))) {
-        goto next;
-      }
-      if(arr.limit == 1) {
-        if(SCORE_BASE == f(path + 2, expr, len, count)) break;
-      } else {
-        f(path + 2, expr, len, count);
-      }
-      if(de->d_type == DT_DIR) rec_paths(expr, len, count, f, path);
-    next:
-      path[null] = 0;
     }
+    if(de->d_type == DT_DIR ||
+       (de->d_type == DT_LNK &&
+        (stat(path, &sstat) || !S_ISDIR(sstat.st_mode))) &&
+         SCORE_BASE == f(path + 2, expr, len, count) && arr.limit == 1) {
+      break;
+    }
+    if(de->d_type == DT_DIR) rec_paths(expr, len, count, f, path);
+    path[null] = 0;
   }
   closedir(dr);
 }
@@ -157,9 +150,13 @@ int main(int argc, const char *const argv[]) {
 
   ranges = malloc((argc - 1) * 2 * sizeof(uint));
   if(!unlimited) arr.arr = calloc(arr.limit, sizeof(resv_t));
+#ifdef NDEBUG
   stats_alloc(&st, argc - off);
+#endif
   find_paths(argv + off, argc - off, nc);
+#ifdef NDEBUG
   stats_free(&st);
+#endif
 
 #ifndef NDEBUG
   if(unlimited) {
