@@ -6,16 +6,16 @@
 #include <limits.h>
 
 #define SCORE_BASE UINT_MAX
-#define SCORE_DEPTH 200
-#define SCORE_DOTFILE 110
-#define SCORE_DIRNAME_END 100
-#define SCORE_DIRNAME_START 40
-#define SCORE_WORD_END 15
-#define SCORE_WORD_START 10
-#define SCORE_BAD_CASE 5
-#define SCORE_LENGTH 2
+#define SCORE_DIRNAME_END 200
+#define SCORE_DIRNAME_START 160
+#define SCORE_DEPTH 80
+#define SCORE_DOTFILE 70
+#define SCORE_WORD_END 60
+#define SCORE_WORD_START 30
+#define SCORE_BAD_CASE 20
+#define SCORE_LENGTH 4
 
-#define SCORE_LOSS 4
+#define SCORE_LOSS 2
 
 uint score(const stats_t *stats, uint count);
 

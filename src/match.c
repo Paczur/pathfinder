@@ -48,7 +48,8 @@ static bool node_matches(uint *range, const char *str, const char *expr) {
   return false;
 }
 
-bool matches(uint *ranges, const char *str, const char *const *expr, uint len) {
+bool matches(uint *ranges, const char *str, const char *const *expr, uint len,
+             uint count) {
   assert(expr);
   assert(str);
   assert(expr[0]);
@@ -109,5 +110,5 @@ bool matches(uint *ranges, const char *str, const char *const *expr, uint len) {
     while(str[str_i] && str[str_i] != '/') str_i++;
     if(str[str_i]) str_i++;
   }
-  return match;
+  return match && ranges_i == count * 2;
 }

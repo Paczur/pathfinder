@@ -128,7 +128,7 @@ static void bad_case_count(const uint *ranges, uint rangesl, uint *ret,
 static void dotfile(const uint *ranges, uint rangesl, bool *ret,
                     const char *str, uint *dirname_start) {
   ret[0] = str[ranges[0] - dirname_start[0]] == '.';
-  for(size_t i = 2; i < rangesl / 2; i++) {
+  for(size_t i = 1; i < rangesl / 2; i++) {
     ret[i] = str[ranges[i * 2] - dirname_start[i]] == '.';
   }
 }

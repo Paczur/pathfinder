@@ -4,14 +4,8 @@
 
 ### Scoring options
 * --ignore-dotfiles = Skip dotfiles
-* -D, --normal-dotfiles = ignore dot in dotfile name
-* -i, --case-insensitive = don't score based on case
 * -M, --max-depth = max depth to search down the tree (default 10)
-
-### Sort options
 * -r, --reverse-sort = Reverse result of sorting
-* -d, --dirs-first = Dirs first
-* -f, --files-first = Files first
 
 ## Syntax
 pf [OPTIONS] path [path...]

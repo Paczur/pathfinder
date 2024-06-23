@@ -15,7 +15,10 @@
   "General options:\n"                                            \
   "-h, --help          Show help\n"                               \
   "-m, --max-matches   Number of matches to print (default 30)\n" \
-  "-v, --verbose       Print errors to stderr"
+  "-v, --verbose       Print errors to stderr\n"                  \
+  "\n"                                                            \
+  "Search Options:\n"                                             \
+  "--ignore-dotfiles   Skip directories and symlinks beginning with \".\"\n"
 
 uint *ranges;
 struct stat sstat;
@@ -23,6 +26,7 @@ stats_t st;
 bool unlimited;
 bool interactive;
 bool verbose;
+bool ignore_dotfiles;
 resl_t list;
 resa_t arr = {.size = 0, .limit = 1};
 
@@ -50,16 +54,16 @@ static uint node_count(const char *const *expr, uint len) {
 static uint handleinf(const char *str, const char *const *expr, uint len,
                       uint count) {
   resn_t *new;
-  if(matches(ranges, str, expr, len)) {
+  if(matches(ranges, str, expr, len, count)) {
     new = malloc(sizeof(resn_t));
     new->path = malloc(strlen(str) + 1);
     strcpy(new->path, str);
 #ifndef NDEBUG
-    stats_alloc(&new->stats, len);
-    stats(&new->stats, ranges, len * 2, expr, str);
+    stats_alloc(&new->stats, count);
+    stats(&new->stats, ranges, count * 2, expr, str);
     new->score = score(&new->stats, count);
 #else
-    stats(&st, ranges, len * 2, expr, str);
+    stats(&st, ranges, count * 2, expr, str);
     new->score = score(&st, count);
 #endif
     resl_add(&list, new);
@@ -71,15 +75,15 @@ static uint handleinf(const char *str, const char *const *expr, uint len,
 static uint handle(const char *str, const char *const *expr, uint len,
                    uint count) {
   resv_t new;
-  if(matches(ranges, str, expr, len)) {
+  if(matches(ranges, str, expr, len, count)) {
     new.path = malloc(strlen(str) + 1);
     strcpy(new.path, str);
 #ifndef NDEBUG
-    stats_alloc(&new.stats, len);
-    stats(&new.stats, ranges, len * 2, expr, str);
+    stats_alloc(&new.stats, count);
+    stats(&new.stats, ranges, count * 2, expr, str);
     new.score = score(&new.stats, count);
 #else
-    stats(&st, ranges, len * 2, expr, str);
+    stats(&st, ranges, count * 2, expr, str);
     new.score = score(&st, count);
 #endif
     if(!resa_add(&arr, &new)) {
@@ -102,7 +106,9 @@ static void rec_paths(const char *const *expr, uint len, uint count,
     return;
   }
   while((de = readdir(dr))) {
-    if(!strcmp(de->d_name, "..") || !strcmp(de->d_name, ".")) continue;
+    if(!strcmp(de->d_name, "..") || !strcmp(de->d_name, ".") ||
+       (ignore_dotfiles && de->d_name[0] == '.'))
+      continue;
     if(de->d_type == DT_LNK || de->d_type == DT_DIR) {
       sprintf(path + null, "/%s", de->d_name);
     }
@@ -147,14 +153,20 @@ int main(int argc, const char *const argv[]) {
       off++;
     } else if(!strcmp(argv[off], "-v") || !strcmp(argv[off], "--verbose")) {
       verbose = true;
+    } else if(!strcmp(argv[off], "--ignore-dotfiles")) {
+      ignore_dotfiles = true;
     }
+  }
+  if(off >= (uint)argc) {
+    puts(HELP_MSG);
+    goto cleanup;
   }
   nc = node_count(argv + off, argc - off);
 
-  ranges = malloc((argc - 1) * 2 * sizeof(uint));
+  ranges = malloc(nc * 2 * sizeof(uint));
   if(!unlimited) arr.arr = calloc(arr.limit, sizeof(resv_t));
 #ifdef NDEBUG
-  stats_alloc(&st, argc - off);
+  stats_alloc(&st, nc);
 #endif
   find_paths(argv + off, argc - off, nc);
 #ifdef NDEBUG

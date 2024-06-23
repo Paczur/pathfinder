@@ -39,61 +39,63 @@ TEST(node_matches, expr_shorter_than_path) {
   assert_false(node_matches(NULL, "path", "s"));
 }
 
-#define TEST_MATCHES(name, str, expr, ...)          \
+#define TEST_MATCHES(name, str, expr, count, ...)   \
   TEST(matches, name) {                             \
     uint res[] = {__VA_ARGS__};                     \
     uint range[LENGTH(res)];                        \
     char *e[] = {expr};                             \
-    assert_true(matches(range, str, e, 1));         \
+    assert_true(matches(range, str, e, 1, count));  \
     assert_memory_equal(range, res, sizeof(range)); \
   }
-#define TEST_NOT_MATCHES(name, str, ...)            \
-  TEST(matches, name) {                             \
-    char *e[] = {__VA_ARGS__};                      \
-    assert_false(matches(NULL, str, e, LENGTH(e))); \
+#define TEST_NOT_MATCHES(name, str, count, ...)            \
+  TEST(matches, name) {                                    \
+    char *e[] = {__VA_ARGS__};                             \
+    assert_false(matches(NULL, str, e, LENGTH(e), count)); \
   }
 
 TEST(matches, space_direct) {
   uint res[] = {0, 1, 9, 10};
   uint range[LENGTH(res)];
   char *expr[] = {"p", "r"};
-  assert_true(matches(range, "projects/real", expr, sizeof(expr)));
+  assert_true(matches(range, "projects/real", expr, LENGTH(expr), 2));
   assert_memory_equal(range, res, sizeof(range));
 }
 TEST(matches, space_indirect) {
   uint res[] = {0, 1, 12, 13};
   uint range[LENGTH(res)];
   char *expr[] = {"p", "r"};
-  assert_true(matches(range, "projects/no/real", expr, sizeof(expr)));
+  assert_true(matches(range, "projects/no/real", expr, LENGTH(expr), 2));
   assert_memory_equal(range, res, sizeof(range));
 }
-TEST_MATCHES(slash, "projects/real", "p/r", 0, 1, 9, 10)
-TEST_MATCHES(middle, "project", "e", 4, 5)
-TEST_MATCHES(absolute, "/rp", "/p", 2, 3)
+TEST_MATCHES(slash, "projects/real", "p/r", 2, 0, 1, 9, 10)
+TEST_MATCHES(middle, "project", "e", 1, 4, 5)
+TEST_MATCHES(absolute, "/rp", "/p", 1, 2, 3)
 TEST(matches, absolute_middle) {
   uint res[] = {2, 3, 6, 7};
   uint range[LENGTH(res)];
   char *e[] = {"/p", "s"};
-  assert_true(matches(range, "/rp/test", e, 2));
+  assert_true(matches(range, "/rp/test", e, 2, 2));
   assert_memory_equal(range, res, sizeof(range));
 }
 TEST(matches, absolute_space) {
   uint res[] = {0, 1, 6, 7};
   uint range[LENGTH(res)];
   char *e[] = {"/", "p"};
-  assert_true(matches(range, "/test/pro", e, 2));
+  assert_true(matches(range, "/test/pro", e, 2, 2));
   assert_memory_equal(range, res, sizeof(range));
 }
-TEST_MATCHES(second, "test/project", "p", 5, 6)
-TEST_MATCHES(skip_one, "projects/lol/test", "p//t", 0, 1, 11, 11, 13, 14)
-TEST_MATCHES(always_skips, "projects/test/test2", "p//t", 0, 1, 12, 12, 14, 15)
-TEST_NOT_MATCHES(first_false, "test", "pr")
-TEST_NOT_MATCHES(absolute_false, "/test", "/p")
-TEST_NOT_MATCHES(longer_path, "projects/test", "p")
-TEST_NOT_MATCHES(space_false, "projects/no/luck", "p r")
-TEST_NOT_MATCHES(absolute_relative, "pr", "/p")
-TEST_NOT_MATCHES(absolute_indirect, "/test/pro", "/p")
-TEST_NOT_MATCHES(slash_false, "projects/no", "p/r")
+TEST_MATCHES(second, "test/project", "p", 1, 5, 6)
+TEST_MATCHES(skip_one, "projects/lol/test", "p//t", 3, 0, 1, 11, 11, 13, 14)
+TEST_MATCHES(always_skips, "projects/test/test2", "p//t", 3, 0, 1, 12, 12, 14,
+             15)
+TEST_NOT_MATCHES(first_false, "test", 1, "pr")
+TEST_NOT_MATCHES(absolute_false, "/test", 1, "/p")
+TEST_NOT_MATCHES(longer_path, "projects/test", 1, "p")
+TEST_NOT_MATCHES(space_false, "projects/no/luck", 2, "p", "r")
+TEST_NOT_MATCHES(expr_left, "projects/false", 2, "a", "o")
+TEST_NOT_MATCHES(absolute_relative, "pr", 1, "/p")
+TEST_NOT_MATCHES(absolute_indirect, "/test/pro", 1, "/p")
+TEST_NOT_MATCHES(slash_false, "projects/no", 2, "p/r")
 
 int main(void) {
   const struct CMUnitTest tests[] = {
@@ -129,6 +131,7 @@ int main(void) {
     ADD(matches, always_skips),
     ADD(matches, first_false),
     ADD(matches, longer_path),
+    ADD(matches, expr_left),
     ADD(matches, middle),
     ADD(matches, second),
     ADD(matches, skip_one),
