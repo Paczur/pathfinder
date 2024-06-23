@@ -31,6 +31,12 @@ MAKEFLAGS := --jobs=$(shell nproc)
 MAKEFLAGS += --output-sync=target
 $(VERBOSE).SILENT:
 
+install: binaries
+	cp $(BIN)/pf /usr/bin
+
+uninstall:
+	rm /usr/bin/pf
+
 re: re_clean debug
 re_clean:
 	rm -rf $(BIN)
