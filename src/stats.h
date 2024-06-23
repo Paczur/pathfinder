@@ -9,7 +9,8 @@ typedef struct stats_t {
   uint *dirname_end;
   uint *word_start;
   uint *word_end;
-  uint *bad_case;
+  uint *up_case;
+  uint *low_case;
   bool *dotfile;
 } stats_t;
 #define STATS_INIT(size)               \
@@ -18,7 +19,8 @@ typedef struct stats_t {
     .dirname_end = &(uint[size]){0},   \
     .word_start = &(uint[size]){0},    \
     .word_end = &(uint[size]){0},      \
-    .bad_case = &(uint[size]){0},      \
+    .low_case = &(uint[size]){0},      \
+    .up_case = &(uint[size]){0},       \
     .dotfile = &(bool[size]){0},       \
   }
 void stats(stats_t *stats, uint *node_is, uint nodesl, const char *const *expr,
