@@ -27,11 +27,14 @@ resl_t list;
 resa_t arr = {.size = 0, .limit = 1};
 
 static void cleanup(void) {
+#ifndef NDEBUG
   if(unlimited) {
     resl_free(&list);
   } else {
     resa_free(&arr);
   }
+  free(ranges);
+#endif
 }
 
 static uint node_count(const char *const *expr, uint len) {
@@ -103,10 +106,10 @@ static void rec_paths(const char *const *expr, uint len, uint count,
     if(de->d_type == DT_LNK || de->d_type == DT_DIR) {
       sprintf(path + null, "/%s", de->d_name);
     }
-    if(de->d_type == DT_DIR ||
-       (de->d_type == DT_LNK &&
-        (stat(path, &sstat) || !S_ISDIR(sstat.st_mode))) &&
-         SCORE_BASE == f(path + 2, expr, len, count) && arr.limit == 1) {
+    if((de->d_type == DT_DIR ||
+        (de->d_type == DT_LNK &&
+         (stat(path, &sstat) || !S_ISDIR(sstat.st_mode)))) &&
+       SCORE_BASE == f(path + 2, expr, len, count) && arr.limit == 1) {
       break;
     }
     if(de->d_type == DT_DIR) rec_paths(expr, len, count, f, path);
@@ -175,12 +178,10 @@ int main(int argc, const char *const argv[]) {
 
 cleanup:
   cleanup();
-  free(ranges);
   return 0;
 
 error:
   puts(HELP_MSG);
   cleanup();
-  free(ranges);
   return 1;
 }
