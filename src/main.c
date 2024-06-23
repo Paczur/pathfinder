@@ -112,9 +112,8 @@ static void rec_paths(const char *const *expr, uint len, uint count,
     if(de->d_type == DT_LNK || de->d_type == DT_DIR) {
       sprintf(path + null, "/%s", de->d_name);
     }
-    if((de->d_type == DT_DIR ||
-        (de->d_type == DT_LNK &&
-         (stat(path, &sstat) || !S_ISDIR(sstat.st_mode)))) &&
+    if((de->d_type == DT_DIR || (de->d_type == DT_LNK && !stat(path, &sstat) &&
+                                 S_ISDIR(sstat.st_mode))) &&
        SCORE_BASE == f(path + 2, expr, len, count) && arr.limit == 1) {
       break;
     }
