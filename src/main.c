@@ -161,6 +161,15 @@ int main(int argc, const char *const argv[]) {
   if(!unlimited) arr.arr = calloc(arr.limit, sizeof(resv_t));
   find_paths(argv + off, argc - off, nc);
 
+#ifndef NDEBUG
+  if(unlimited) {
+    resl_print(&list, nc);
+  } else {
+    resa_print(&arr, nc);
+  }
+  puts("");
+#endif
+
   if(unlimited) {
     resl_path_print(&list);
   } else {
