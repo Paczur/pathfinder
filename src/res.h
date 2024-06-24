@@ -11,6 +11,7 @@ typedef struct resv_t {
   stats_t stats;
 #endif
 } resv_t;
+void resv_alloc(resv_t *val, size_t len, size_t count);
 void resv_free(resv_t *val);
 void resv_print(const resv_t *val, uint count);
 
@@ -22,15 +23,18 @@ typedef struct resn_t {
 #endif
   struct resn_t *next;
 } resn_t;
+void resn_alloc(resn_t *node, size_t len, size_t count);
 void resn_free(resn_t *node);
 void resn_print(const resn_t *node, uint count);
 
+#define RESA_INIT(lim) {.arr = &(resv_t[lim]){{0}}, .limit = lim}
 typedef struct resa_t {
   uint limit;
   uint size;
   resv_t *arr;
 } resa_t;
 bool resa_add(resa_t *arr, resv_t *val);
+void resa_alloc(resa_t *arr);
 void resa_free(resa_t *arr);
 void resa_print(const resa_t *arr, uint count);
 void resa_path_print(const resa_t *arr);

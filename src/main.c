@@ -54,18 +54,18 @@ static uint node_count(const char *const *expr, uint len) {
 static uint handleinf(const char *str, const char *const *expr, uint len,
                       uint count) {
   resn_t *new;
+  stats_t *s;
   if(matches(ranges, str, expr, len, count)) {
     new = malloc(sizeof(resn_t));
-    new->path = malloc(strlen(str) + 1);
-    strcpy(new->path, str);
 #ifndef NDEBUG
-    stats_alloc(&new->stats, count);
-    stats(&new->stats, ranges, count * 2, expr, str);
-    new->score = score(&new->stats, count);
+    s = &new->stats;
 #else
-    stats(&st, ranges, count * 2, expr, str);
-    new->score = score(&st, count);
+    s = &st;
 #endif
+    resn_alloc(new, strlen(str) + 1, count);
+    strcpy(new->path, str);
+    stats(s, ranges, count * 2, expr, str);
+    new->score = score(s, count);
     resl_add(&list, new);
     return new->score;
   }
@@ -75,17 +75,17 @@ static uint handleinf(const char *str, const char *const *expr, uint len,
 static uint handle(const char *str, const char *const *expr, uint len,
                    uint count) {
   resv_t new;
+  stats_t *s;
   if(matches(ranges, str, expr, len, count)) {
-    new.path = malloc(strlen(str) + 1);
-    strcpy(new.path, str);
 #ifndef NDEBUG
-    stats_alloc(&new.stats, count);
-    stats(&new.stats, ranges, count * 2, expr, str);
-    new.score = score(&new.stats, count);
+    s = &new.stats;
 #else
-    stats(&st, ranges, count * 2, expr, str);
-    new.score = score(&st, count);
+    s = &st;
 #endif
+    resv_alloc(&new, strlen(str) + 1, count);
+    strcpy(new.path, str);
+    stats(s, ranges, count * 2, expr, str);
+    new.score = score(s, count);
     if(!resa_add(&arr, &new)) {
       resv_free(&new);
     } else {
@@ -163,11 +163,13 @@ int main(int argc, const char *const argv[]) {
   nc = node_count(argv + off, argc - off);
 
   ranges = malloc(nc * 2 * sizeof(uint));
-  if(!unlimited) arr.arr = calloc(arr.limit, sizeof(resv_t));
+  if(!unlimited) resa_alloc(&arr);
 #ifdef NDEBUG
   stats_alloc(&st, nc);
 #endif
+
   find_paths(argv + off, argc - off, nc);
+
 #ifdef NDEBUG
   stats_free(&st);
 #endif

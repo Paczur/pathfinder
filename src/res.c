@@ -3,6 +3,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+void resv_alloc(resv_t *val, size_t len, size_t count) {
+#ifndef NDEBUG
+  stats_alloc(&val->stats, count);
+#else
+  (void)count;
+#endif
+  val->path = malloc(len);
+}
+
 void resv_free(resv_t *val) {
   free(val->path);
 #ifndef NDEBUG
@@ -18,6 +27,13 @@ void resv_print(const resv_t *val, uint count) {
   stats_print(&val->stats, count);
 #endif
   printf("}");
+}
+
+void resn_alloc(resn_t *node, size_t len, size_t count) {
+  node->path = malloc(len);
+#ifndef NDEBUG
+  stats_alloc(&node->stats, count);
+#endif
 }
 
 void resn_free(resn_t *node) {
@@ -59,6 +75,10 @@ bool resa_add(resa_t *arr, resv_t *val) {
     return true;
   }
   return false;
+}
+
+void resa_alloc(resa_t *arr) {
+  arr->arr = malloc(arr->limit * sizeof(arr->arr[0]));
 }
 
 void resa_free(resa_t *arr) {
