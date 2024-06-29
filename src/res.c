@@ -33,6 +33,8 @@ void resn_alloc(resn_t *node, size_t len, size_t count) {
   node->path = malloc(len);
 #ifndef NDEBUG
   stats_alloc(&node->stats, count);
+#else
+  (void)count;
 #endif
 }
 
