@@ -38,6 +38,8 @@ void resa_alloc(resa_t *arr);
 void resa_free(resa_t *arr);
 void resa_print(const resa_t *arr, uint count);
 void resa_path_print(const resa_t *arr);
+void resa_numbered_path_print(const resa_t *arr);
+void resa_i_path_print(const resa_t *arr, size_t n);
 
 typedef struct resl_t {
   resn_t *head;
@@ -47,5 +49,7 @@ void resl_add(resl_t *list, resn_t *node);
 void resl_free(resl_t *list);
 void resl_print(const resl_t *list, uint count);
 void resl_path_print(const resl_t *list);
+void resl_numbered_path_print(const resl_t *list);
+void resl_i_path_print(const resl_t *list, size_t n);
 
 #endif

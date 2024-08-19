@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
 void resv_alloc(resv_t *val, size_t len, size_t count) {
 #ifndef NDEBUG
   stats_alloc(&val->stats, count);
@@ -108,6 +110,16 @@ void resa_path_print(const resa_t *arr) {
   }
 }
 
+void resa_numbered_path_print(const resa_t *arr) {
+  for(size_t i = 0; i < arr->size; i++) {
+    fprintf(stderr, "%lu: %s\n", i + 1, arr->arr[i].path);
+  }
+}
+
+void resa_i_path_print(const resa_t *arr, size_t n) {
+  printf("%s\n", arr->arr[MIN(n, arr->size) - 1].path);
+}
+
 void resl_add(resl_t *list, resn_t *node) {
   resn_t *n = list->head;
   if(!list->head) {
@@ -162,6 +174,25 @@ void resl_path_print(const resl_t *list) {
   resn_t *n = list->head;
   while(n != list->tail) {
     printf("%s\n", n->path);
+    n = n->next;
+  }
+  printf("%s\n", n->path);
+}
+
+void resl_numbered_path_print(const resl_t *list) {
+  resn_t *n = list->head;
+  size_t i = 1;
+  while(n != list->tail) {
+    fprintf(stderr, "%lu: %s\n", i++, n->path);
+    n = n->next;
+  }
+  fprintf(stderr, "%lu: %s\n", i++, n->path);
+}
+
+void resl_i_path_print(const resl_t *list, size_t i) {
+  resn_t *n = list->head;
+  size_t count = 0;
+  while(n != list->tail && count < i) {
     n = n->next;
   }
   printf("%s\n", n->path);

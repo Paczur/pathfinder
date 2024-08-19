@@ -8,27 +8,32 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#define HELP_MSG                                                  \
-  "Usage: pf [OPTION]... EXPR...\n"                               \
-  "Find path(s) best matching EXPR using substring matches.\n"    \
-  "\n"                                                            \
-  "General options:\n"                                            \
-  "-h, --help          Show help\n"                               \
-  "-m, --max-matches   Number of matches to print (default 30)\n" \
-  "-v, --verbose       Print errors to stderr\n"                  \
-  "\n"                                                            \
-  "Search Options:\n"                                             \
-  "--ignore-dotfiles   Skip directories and symlinks beginning with \".\"\n"
+#define HELP_MSG                                                             \
+  "Usage: pf [OPTION]... EXPR...\n"                                          \
+  "Find path(s) best matching EXPR using substring matches.\n"               \
+  "\n"                                                                       \
+  "General options:\n"                                                       \
+  "-h, --help          Show help\n"                                          \
+  "-m, --max-matches   Number of matches to print (default 9)\n"             \
+  "-v, --verbose       Print errors to stderr\n"                             \
+  "-i, --non-interactive Print all paths immediatly, don't wait for user "   \
+  "choice\n"                                                                 \
+  "\n"                                                                       \
+  "Search Options:\n"                                                        \
+  "--ignore-dotfiles   Skip directories and symlinks beginning with \".\"\n" \
+  "-M, --max-depth     Max depth to search down the tree\n"
 
 uint *ranges;
 struct stat sstat;
 stats_t st;
 bool unlimited;
+bool interactive = true;
 bool interactive;
 bool verbose;
 bool ignore_dotfiles;
+size_t max_depth = 10;
 resl_t list;
-resa_t arr = {.size = 0, .limit = 1};
+resa_t arr = {.size = 0, .limit = 9};
 
 static void cleanup(void) {
 #ifndef NDEBUG
@@ -97,14 +102,15 @@ static uint handle(const char *str, const char *const *expr, uint len,
 
 static void rec_paths(const char *const *expr, uint len, uint count,
                       uint (*f)(const char *, const char *const *, uint, uint),
-                      char *path) {
+                      char *path, size_t iter) {
   struct dirent *de;
   DIR *dr = opendir(path);
-  size_t null = strlen(path);
+  size_t null;
   if(!dr) {
     if(verbose) fprintf(stderr, "Couldn't open directory: %s\n", path);
     return;
   }
+  null = strlen(path);
   while((de = readdir(dr))) {
     if(!strcmp(de->d_name, "..") || !strcmp(de->d_name, ".") ||
        (ignore_dotfiles && de->d_name[0] == '.'))
@@ -117,7 +123,8 @@ static void rec_paths(const char *const *expr, uint len, uint count,
        SCORE_BASE == f(path + 2, expr, len, count) && arr.limit == 1) {
       break;
     }
-    if(de->d_type == DT_DIR) rec_paths(expr, len, count, f, path);
+    if(de->d_type == DT_DIR && iter < max_depth)
+      rec_paths(expr, len, count, f, path, iter + 1);
     path[null] = 0;
   }
   closedir(dr);
@@ -127,11 +134,12 @@ static void find_paths(const char *const *expr, uint len, uint count) {
   uint (*f)(const char *, const char *const *, uint, uint) =
     (unlimited) ? handleinf : handle;
   char path[512] = ".";
-  rec_paths(expr, len, count, f, path);
+  rec_paths(expr, len, count, f, path, 0);
 }
 
 int main(int argc, const char *const argv[]) {
   uint nc;
+  size_t n;
   long long t;
   uint off = 1;
   if(argc < 2) goto error;
@@ -154,6 +162,15 @@ int main(int argc, const char *const argv[]) {
       verbose = true;
     } else if(!strcmp(argv[off], "--ignore-dotfiles")) {
       ignore_dotfiles = true;
+    } else if(!strcmp(argv[off], "-M") || !strcmp(argv[off], "--max-depth")) {
+      if(off + 1 >= (uint)argc || !sscanf(argv[off + 1], "%lld", &t) || t < 0) {
+        goto error;
+      }
+      max_depth = t;
+      off++;
+    } else if(!strcmp(argv[off], "-i") ||
+              !strcmp(argv[off], "--non-interactive")) {
+      interactive = false;
     }
   }
   if(off >= (uint)argc) {
@@ -183,10 +200,25 @@ int main(int argc, const char *const argv[]) {
   puts("");
 #endif
 
-  if(unlimited) {
-    resl_path_print(&list);
+  if(interactive) {
+    if(unlimited) {
+      resl_numbered_path_print(&list);
+    } else {
+      resa_numbered_path_print(&arr);
+    }
+    fputs("Select appropriate path:\n", stderr);
+    if(!scanf("%lu", &n)) goto error;
+    if(unlimited) {
+      resl_i_path_print(&list, n);
+    } else {
+      resa_i_path_print(&arr, n);
+    }
   } else {
-    resa_path_print(&arr);
+    if(unlimited) {
+      resl_path_print(&list);
+    } else {
+      resa_path_print(&arr);
+    }
   }
 
 cleanup:
