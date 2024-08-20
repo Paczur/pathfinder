@@ -35,6 +35,11 @@ if [ -n "$path" ]; then
 fi
 ```
 
+### Installation instructions
+```
+make && sudo make install
+```
+
 ### Dependencies
 Tests require cmocka.
 Release build requires only stdlib.
