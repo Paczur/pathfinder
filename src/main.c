@@ -21,7 +21,7 @@
   "\n"                                                                       \
   "Search Options:\n"                                                        \
   "--ignore-dotfiles   Skip directories and symlinks beginning with \".\"\n" \
-  "-M, --max-depth     Max depth to search down the tree\n"
+  "-M, --max-depth     Max depth to search down the tree (default 5)\n"
 
 uint *ranges;
 struct stat sstat;
@@ -31,7 +31,7 @@ bool interactive = true;
 bool interactive;
 bool verbose;
 bool ignore_dotfiles;
-size_t max_depth = 10;
+size_t max_depth = 5;
 resl_t list;
 resa_t arr = {.size = 0, .limit = 9};
 
@@ -100,41 +100,61 @@ static uint handle(const char *str, const char *const *expr, uint len,
   return 0;
 }
 
-static void rec_paths(const char *const *expr, uint len, uint count,
-                      uint (*f)(const char *, const char *const *, uint, uint),
-                      char *path, size_t iter) {
+static void iter_paths(const char *const *expr, uint len, uint count) {
+  char path[512] = ".";
   struct dirent *de;
-  DIR *dr = opendir(path);
-  size_t null;
-  if(!dr) {
+  uint *null_stack;
+  uint new_null = 1;
+  DIR **dr_stack = malloc((max_depth + 1) * sizeof(DIR *));
+  uint stack_i = 0;
+  dr_stack[0] = opendir(path);
+  if(!dr_stack[0]) {
     if(verbose) fprintf(stderr, "Couldn't open directory: %s\n", path);
+    free(dr_stack);
     return;
   }
-  null = strlen(path);
-  while((de = readdir(dr))) {
-    if(!strcmp(de->d_name, "..") || !strcmp(de->d_name, ".") ||
-       (ignore_dotfiles && de->d_name[0] == '.'))
+  null_stack = malloc((max_depth + 1) * sizeof(uint));
+
+  null_stack[0] = 1;
+  while(1) {
+    de = readdir(dr_stack[stack_i]);
+    if(!de) {
+      closedir(dr_stack[stack_i]);
+      if(stack_i == 0) break;
+      stack_i--;
       continue;
-    if(de->d_type == DT_LNK || de->d_type == DT_DIR) {
-      sprintf(path + null, "/%s", de->d_name);
     }
-    if((de->d_type == DT_DIR || (de->d_type == DT_LNK && !stat(path, &sstat) &&
-                                 S_ISDIR(sstat.st_mode))) &&
-       SCORE_BASE == f(path + 2, expr, len, count) && arr.limit == 1) {
+    if((de->d_type != DT_LNK && de->d_type != DT_DIR) ||
+       (de->d_name[0] == '.' &&
+        (ignore_dotfiles || de->d_name[1] == 0 ||
+         (de->d_name[1] == '.' && de->d_name[2] == 0)))) {
+      continue;
+    }
+    path[null_stack[stack_i]] = '/';
+    new_null = stpcpy(path + null_stack[stack_i] + 1, de->d_name) - path;
+
+    if((de->d_type == DT_DIR ||
+        (!stat(path, &sstat) && S_ISDIR(sstat.st_mode))) &&
+       SCORE_BASE == ((unlimited) ? handleinf(path + 2, expr, len, count)
+                                  : handle(path + 2, expr, len, count))) {
+      for(size_t i = 0; i <= stack_i; i++) {
+        closedir(dr_stack[i]);
+      }
       break;
     }
-    if(de->d_type == DT_DIR && iter < max_depth)
-      rec_paths(expr, len, count, f, path, iter + 1);
-    path[null] = 0;
+    if(de->d_type == DT_DIR && stack_i < max_depth) {
+      stack_i++;
+      dr_stack[stack_i] = opendir(path);
+      if(!dr_stack[stack_i]) {
+        stack_i--;
+      } else {
+        null_stack[stack_i] = new_null;
+      }
+    }
   }
-  closedir(dr);
-}
 
-static void find_paths(const char *const *expr, uint len, uint count) {
-  uint (*f)(const char *, const char *const *, uint, uint) =
-    (unlimited) ? handleinf : handle;
-  char path[512] = ".";
-  rec_paths(expr, len, count, f, path, 0);
+  free(dr_stack);
+  free(null_stack);
 }
 
 int main(int argc, const char *const argv[]) {
@@ -185,7 +205,7 @@ int main(int argc, const char *const argv[]) {
   stats_alloc(&st, nc);
 #endif
 
-  find_paths(argv + off, argc - off, nc);
+  iter_paths(argv + off, argc - off, nc);
 
 #ifdef NDEBUG
   stats_free(&st);

@@ -9,8 +9,10 @@ WARN=-Wall -Wextra -Wvla
 NO_WARN_TESTS=-Wno-unused-parameter -Wno-incompatible-pointer-types -Wno-unused-but-set-parameter
 MEMORY_DEBUG=-fsanitize=address -fsanitize=pointer-compare -fsanitize=pointer-subtract
 DEBUG=$(MEMORY_DEBUG) -Og -ggdb3  -fsanitize=undefined -fsanitize-address-use-after-scope -fstack-check -fno-stack-clash-protection
+PERF=-O2 -pipe -flto=4 -fwhole-program -D NDEBUG
+DISASSEMBLY=$(PERF) -g
+RELEASE=$(PERF) -s
 LIBS=$(shell pkg-config --cflags --libs cmocka)
-RELEASE=-O2 -s -pipe -flto=4 -fwhole-program -D NDEBUG
 CFLAGS=$(WARN) -march=native -std=gnu99 $(LIBS)
 TESTS=$(wildcard $(SRC)/*.test.c $(SRC)/**/*.test.c)
 BIN_TESTS=$(patsubst $(SRC)/%.test.c, $(TEST_DIR)/%.test,$(TESTS))
@@ -26,7 +28,7 @@ all: release
 $(shell mkdir -p $(dir $(DEPENDS)))
 -include $(DEPENDS)
 
-.PHONY: all install uninstall release debug re re_clean clean
+.PHONY: all install uninstall release debug dis clean
 MAKEFLAGS := --jobs=$(shell nproc)
 MAKEFLAGS += --output-sync=target
 $(VERBOSE).SILENT:
@@ -37,15 +39,14 @@ install: binaries
 uninstall:
 	rm /usr/bin/pf
 
-re: re_clean debug
-re_clean:
-	rm -rf $(BIN)
-
 release: CFLAGS += $(RELEASE)
 release: binaries
 
 debug: CFLAGS += $(DEBUG)
 debug: tests binaries
+
+dis: CFLAGS += $(DISASSEMBLY)
+dis: binaries objdump
 
 check: tests
 check:
@@ -56,7 +57,10 @@ check:
 clean:
 	rm -rf $(BIN) $(BUILD) $(CCACHE_DIR)
 
-binaries: $(BIN)/pf
+binaries: $(BIN)/pf | $(BIN)
+
+objdump: $(BIN)/pf | $(BIN)
+	objdump -drwRS $^
 
 tests: $(BIN_TESTS)
 
