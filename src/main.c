@@ -14,24 +14,26 @@
   "\n"                                                                       \
   "General options:\n"                                                       \
   "-h, --help          Show help\n"                                          \
-  "-m, --max-matches   Number of matches to print (default 9)\n"             \
   "-v, --verbose       Print errors to stderr\n"                             \
-  "-i, --non-interactive Print all paths immediatly, don't wait for user "   \
+  "-m, --max-matches   Number of matches to print (default 9)\n"             \
+  "-r, --reverse       Reverse display order\n"                              \
+  "-i, --non-interactive Print  paths immediatly, don't wait for user "      \
   "choice\n"                                                                 \
   "\n"                                                                       \
   "Search Options:\n"                                                        \
   "--ignore-dotfiles   Skip directories and symlinks beginning with \".\"\n" \
   "-M, --max-depth     Max depth to search down the tree (default 5)\n"
 
+bool unlimited;
+bool interactive = true;
+bool verbose;
+bool reverse;
+bool ignore_dotfiles;
+size_t max_depth = 5;
+
 uint *ranges;
 struct stat sstat;
 stats_t st;
-bool unlimited;
-bool interactive = true;
-bool interactive;
-bool verbose;
-bool ignore_dotfiles;
-size_t max_depth = 5;
 resl_t list;
 resa_t arr = {.size = 0, .limit = 9};
 
@@ -191,6 +193,8 @@ int main(int argc, const char *const argv[]) {
     } else if(!strcmp(argv[off], "-i") ||
               !strcmp(argv[off], "--non-interactive")) {
       interactive = false;
+    } else if(!strcmp(argv[off], "-r") || !strcmp(argv[off], "--reverse")) {
+      reverse = true;
     }
   }
   if(off >= (uint)argc) {
@@ -222,11 +226,19 @@ int main(int argc, const char *const argv[]) {
 
   if(interactive) {
     if(unlimited) {
-      resl_numbered_path_print(&list);
+      if(reverse) {
+        resl_numbered_path_print(&list);
+      } else {
+        resl_reverse_numbered_path_print(&list);
+      }
     } else {
-      resa_numbered_path_print(&arr);
+      if(reverse) {
+        resa_numbered_path_print(&arr);
+      } else {
+        resa_reverse_numbered_path_print(&arr);
+      }
     }
-    fputs("Select appropriate path:\n", stderr);
+    fputs("\n", stderr);
     if(!scanf("%lu", &n)) goto error;
     if(unlimited) {
       resl_i_path_print(&list, n);
@@ -235,9 +247,17 @@ int main(int argc, const char *const argv[]) {
     }
   } else {
     if(unlimited) {
-      resl_path_print(&list);
+      if(reverse) {
+        resl_reverse_path_print(&list);
+      } else {
+        resl_path_print(&list);
+      }
     } else {
-      resa_path_print(&arr);
+      if(reverse) {
+        resa_reverse_path_print(&arr);
+      } else {
+        resa_path_print(&arr);
+      }
     }
   }
 
