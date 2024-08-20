@@ -12,6 +12,9 @@
   "Usage: pf [OPTION]... EXPR...\n"                                          \
   "Find path(s) best matching EXPR using substring matches.\n"               \
   "\n"                                                                       \
+  "Symlinks that point to directories are considered in results,\n"          \
+  "but aren't followed in order to avoid infinite loops.\n"                  \
+  "\n"                                                                       \
   "General options:\n"                                                       \
   "-h, --help          Show help\n"                                          \
   "-v, --verbose       Print errors to stderr\n"                             \

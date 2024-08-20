@@ -5,7 +5,11 @@ Built to try out TDD. Primarly designed for combining with cd for quick system n
 ### Usage
 ```
 Usage: pf [OPTION]... [EXPR]...
-Find path(s) best matching EXPR using substring matches.
+Find directories best matching EXPR using substring matches.
+
+Symlinks that point to directories are considered in results,
+but aren't followed in order to avoid infinite loops.
+
 General options:
 -h, --help          Show help
 -v, --verbose       Print errors to stderr
