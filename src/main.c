@@ -105,7 +105,7 @@ static void iter_paths(const char *const *expr, uint len, uint count) {
   struct dirent *de;
   uint *null_stack;
   uint new_null = 1;
-  DIR **dr_stack = malloc((max_depth + 1) * sizeof(DIR *));
+  DIR **dr_stack = malloc(max_depth * sizeof(DIR *));
   uint stack_i = 0;
   dr_stack[0] = opendir(path);
   if(!dr_stack[0]) {
@@ -113,7 +113,7 @@ static void iter_paths(const char *const *expr, uint len, uint count) {
     free(dr_stack);
     return;
   }
-  null_stack = malloc((max_depth + 1) * sizeof(uint));
+  null_stack = malloc(max_depth * sizeof(uint));
 
   null_stack[0] = 1;
   while(1) {
@@ -142,7 +142,7 @@ static void iter_paths(const char *const *expr, uint len, uint count) {
       }
       break;
     }
-    if(de->d_type == DT_DIR && stack_i < max_depth) {
+    if(de->d_type == DT_DIR && stack_i + 1 < max_depth) {
       stack_i++;
       dr_stack[stack_i] = opendir(path);
       if(!dr_stack[stack_i]) {
