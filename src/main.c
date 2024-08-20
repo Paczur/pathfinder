@@ -29,7 +29,7 @@ bool interactive = true;
 bool verbose;
 bool reverse;
 bool ignore_dotfiles;
-size_t max_depth = 5;
+uint max_depth = 5;
 
 uint *ranges;
 struct stat sstat;
@@ -50,8 +50,8 @@ static void cleanup(void) {
 
 static uint node_count(const char *const *expr, uint len) {
   uint res = len;
-  for(size_t i = 0; i < len; i++) {
-    for(size_t j = 0; expr[i][j]; j++) {
+  for(uint i = 0; i < len; i++) {
+    for(uint j = 0; expr[i][j]; j++) {
       if(expr[i][j] == '/') res++;
     }
   }
@@ -139,7 +139,7 @@ static void iter_paths(const char *const *expr, uint len, uint count) {
         (!stat(path, &sstat) && S_ISDIR(sstat.st_mode))) &&
        SCORE_BASE == ((unlimited) ? handleinf(path + 2, expr, len, count)
                                   : handle(path + 2, expr, len, count))) {
-      for(size_t i = 0; i <= stack_i; i++) {
+      for(uint i = 0; i <= stack_i; i++) {
         closedir(dr_stack[i]);
       }
       break;
@@ -161,14 +161,14 @@ static void iter_paths(const char *const *expr, uint len, uint count) {
 
 int main(int argc, const char *const argv[]) {
   uint nc;
-  size_t n;
+  uint n;
   long long t;
   uint off = 1;
   if(argc < 2) goto error;
   for(; off < (uint)argc; off++) {
     if(argv[off][0] != '-') break;
     if(!strcmp(argv[off], "-h") || !strcmp(argv[off], "--help")) {
-      puts(HELP_MSG);
+      fputs(HELP_MSG "\n", stderr);
       goto cleanup;
     } else if(!strcmp(argv[off], "-m") || !strcmp(argv[off], "--max-matches")) {
       if(off + 1 >= (uint)argc || !sscanf(argv[off + 1], "%lld", &t)) {
@@ -198,7 +198,7 @@ int main(int argc, const char *const argv[]) {
     }
   }
   if(off >= (uint)argc) {
-    puts(HELP_MSG);
+    fputs(HELP_MSG "\n", stderr);
     goto cleanup;
   }
   nc = node_count(argv + off, argc - off);
@@ -241,7 +241,7 @@ int main(int argc, const char *const argv[]) {
       }
     }
     fputs("Choice: ", stderr);
-    if(!scanf("%lu", &n)) goto error;
+    if(!scanf("%u", &n)) goto error;
     if(unlimited) {
       resl_i_path_print(&list, n);
     } else {
@@ -268,7 +268,7 @@ cleanup:
   return 0;
 
 error:
-  puts(HELP_MSG);
+  fputs(HELP_MSG "\n", stderr);
   cleanup();
   return 1;
 }
