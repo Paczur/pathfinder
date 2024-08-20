@@ -17,7 +17,7 @@ Search Options:
 -M, --max-depth     Max depth to search down the tree (default 5)
 ```
 
-### Recommended alias
+### Recommended function and script
 ```
 cdd() {
   local path="$(pf "$1")"
@@ -25,6 +25,14 @@ cdd() {
     cd "$path"
   fi
 }
+```
+
+```
+#!/bin/sh
+path="$(pf "$1")"
+if [ -n "$path" ]; then
+    cd "$path"
+fi
 ```
 
 ### Dependencies
