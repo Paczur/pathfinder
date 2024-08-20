@@ -240,7 +240,7 @@ int main(int argc, const char *const argv[]) {
         resa_reverse_numbered_path_print(&arr);
       }
     }
-    fputs("\n", stderr);
+    fputs("Choice: ", stderr);
     if(!scanf("%lu", &n)) goto error;
     if(unlimited) {
       resl_i_path_print(&list, n);
