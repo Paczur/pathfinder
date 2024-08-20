@@ -17,7 +17,7 @@ Search Options:
 -M, --max-depth     Max depth to search down the tree (default 5)
 ```
 
-### Recommended function and script
+### Recommended function to put in .bashrc
 ```
 cdd() {
   local path="$(pf "$1")"
@@ -25,14 +25,6 @@ cdd() {
     cd "$path"
   fi
 }
-```
-
-```
-#!/bin/sh
-path="$(pf "$1")"
-if [ -n "$path" ]; then
-    cd "$path"
-fi
 ```
 
 ### Installation instructions
