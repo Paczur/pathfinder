@@ -224,6 +224,8 @@ int main(int argc, const char *const argv[]) {
   puts("");
 #endif
 
+  if((unlimited && !list.tail) || (!unlimited && !arr.size)) goto cleanup;
+
   if(interactive) {
     if(unlimited) {
       if(reverse) {

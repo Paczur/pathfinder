@@ -23,6 +23,7 @@ void resv_free(resv_t *val) {
 
 void resv_print(const resv_t *val, uint count) {
   (void)count;
+  if(val == NULL) return;
   printf("{path: \"%s\", score: %u", val->path, val->score);
 #ifndef NDEBUG
   printf(", stats: ");
@@ -49,6 +50,7 @@ void resn_free(resn_t *node) {
 
 void resn_print(const resn_t *node, uint count) {
   (void)count;
+  if(node == NULL) return;
   printf("{path: \"%s\", score: %u", node->path, node->score);
 #ifndef NDEBUG
   printf(", stats: ");
@@ -111,6 +113,7 @@ void resa_path_print(const resa_t *arr) {
 }
 
 void resa_reverse_path_print(const resa_t *arr) {
+  if(arr->size <= 0) return;
   for(size_t i = arr->size - 1; i > 0; i--) {
     printf("%s\n", arr->arr[i].path);
   }
@@ -124,6 +127,7 @@ void resa_numbered_path_print(const resa_t *arr) {
 }
 
 void resa_reverse_numbered_path_print(const resa_t *arr) {
+  if(arr->size <= 0) return;
   for(size_t i = arr->size - 1; i > 0; i--) {
     fprintf(stderr, "%lu: %s\n", i + 1, arr->arr[i].path);
   }
@@ -186,6 +190,7 @@ void resl_print(const resl_t *list, uint count) {
 
 void resl_path_print(const resl_t *list) {
   resn_t *n = list->head;
+  if(n == NULL) return;
   while(n != list->tail) {
     printf("%s\n", n->path);
     n = n->next;
@@ -196,6 +201,7 @@ void resl_path_print(const resl_t *list) {
 void resl_reverse_path_print(const resl_t *list) {
   resn_t *n = list->head;
   resl_t l2;
+  if(n == NULL) return;
   while(n != list->tail) {
     resl_add(&l2, n);
     n = n->next;
@@ -212,6 +218,7 @@ void resl_reverse_path_print(const resl_t *list) {
 void resl_numbered_path_print(const resl_t *list) {
   resn_t *n = list->head;
   size_t i = 1;
+  if(n == NULL) return;
   while(n != list->tail) {
     fprintf(stderr, "%lu: %s\n", i++, n->path);
     n = n->next;
@@ -223,6 +230,7 @@ void resl_reverse_numbered_path_print(const resl_t *list) {
   resn_t *n = list->head;
   size_t i = 1;
   resl_t l2;
+  if(n == NULL) return;
   while(n != list->tail) {
     resl_add(&l2, n);
     n = n->next;
@@ -239,6 +247,7 @@ void resl_reverse_numbered_path_print(const resl_t *list) {
 void resl_i_path_print(const resl_t *list, size_t i) {
   resn_t *n = list->head;
   size_t count = 0;
+  if(n == NULL) return;
   while(n != list->tail && count < i) {
     n = n->next;
   }
