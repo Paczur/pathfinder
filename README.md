@@ -4,21 +4,23 @@ Built to try out TDD. Primarly designed for combining with cd for quick system n
 
 ### Usage
 ```
-Usage: pf [OPTION]... [EXPR]...
-Find directories best matching EXPR using substring matches.
+  Find path(s) best matching EXPR using substring matches.
 
-Symlinks that point to directories are considered in results,
-but aren't followed in order to avoid infinite loops.
+  General options:
+  -h, --help            Show help
+  -v, --verbose         Print errors to stderr
+  -m, --max-matches     Number of matches to print (default 9)
+  -r, --reverse         Reverse display order
+  -i, --non-interactive Print  paths immediatly, don't wait for user choice
 
-General options:
--h, --help          Show help
--v, --verbose       Print errors to stderr
--m, --max-matches   Number of matches to print (default 9)
--r, --reverse       Reverse display order
--i, --non-interactive Print  paths immediatly, don't wait for user choice
-Search Options:
---ignore-dotfiles   Skip directories and symlinks beginning with "."
--M, --max-depth     Max depth to search down the tree (default 5)
+  Search Options:
+  -I, --ignore-dotfiles   Skip directories and symlinks beginning with "."
+  -M, --max-depth         Max depth to search down the tree (default 5)
+  -a, --all-types         Don't filter results based on type
+  -d, --dirs-only         Consider directories only
+  -f, --files-only        Consider files only
+  -dl, --dirs-with-links  Consider directories with symlinks to directories (default)
+  -fl, --files-with-links Consider files with symlink to files
 ```
 
 ### Recommended function to put in .bashrc
