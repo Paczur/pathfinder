@@ -5,7 +5,7 @@ DIRS=$(BIN) $(BUILD)
 SRC=src
 ETC=/etc/awm
 
-WARN=-Wall -Wextra -Wvla
+WARN=-Wall -Wextra -Wvla -Wsuggest-attribute=pure
 NO_WARN_TESTS=-Wno-unused-parameter -Wno-incompatible-pointer-types -Wno-unused-but-set-parameter
 MEMORY_DEBUG=-fsanitize=address -fsanitize=pointer-compare -fsanitize=pointer-subtract
 DEBUG=$(MEMORY_DEBUG) -Og -ggdb3  -fsanitize=undefined -fsanitize-address-use-after-scope -fstack-check -fno-stack-clash-protection
