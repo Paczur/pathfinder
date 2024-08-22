@@ -21,7 +21,7 @@ void resv_free(resv_t *val) {
 #endif
 }
 
-rda(1) void resv_print(const resv_t *val, uint count) {
+void resv_print(const resv_t *val, uint count) {
   (void)count;
   if(val == NULL) return;
   printf("{path: \"%s\", score: %u", val->path, val->score);
@@ -48,7 +48,7 @@ void resn_free(resn_t *node) {
 #endif
 }
 
-rda(1) void resn_print(const resn_t *node, uint count) {
+void resn_print(const resn_t *node, uint count) {
   (void)count;
   if(node == NULL) return;
   printf("{path: \"%s\", score: %u", node->path, node->score);
@@ -94,7 +94,7 @@ void resa_free(resa_t *arr) {
   free(arr->arr);
 }
 
-rda(1) void resa_print(const resa_t *arr, uint count) {
+void resa_print(const resa_t *arr, uint count) {
   printf("[");
   if(arr->size > 0) {
     for(size_t i = 0; i < arr->size - 1; i++) {
@@ -106,13 +106,13 @@ rda(1) void resa_print(const resa_t *arr, uint count) {
   printf("]");
 }
 
-rda(1) void resa_path_print(const resa_t *arr) {
+void resa_path_print(const resa_t *arr) {
   for(size_t i = 0; i < arr->size; i++) {
     printf("%s\n", arr->arr[i].path);
   }
 }
 
-rda(1) void resa_reverse_path_print(const resa_t *arr) {
+void resa_reverse_path_print(const resa_t *arr) {
   if(arr->size <= 0) return;
   for(size_t i = arr->size - 1; i > 0; i--) {
     printf("%s\n", arr->arr[i].path);
@@ -120,13 +120,13 @@ rda(1) void resa_reverse_path_print(const resa_t *arr) {
   printf("%s\n", arr->arr[0].path);
 }
 
-rda(1) void resa_numbered_path_print(const resa_t *arr) {
+void resa_numbered_path_print(const resa_t *arr) {
   for(size_t i = 0; i < arr->size; i++) {
     fprintf(stderr, "%lu: %s\n", i + 1, arr->arr[i].path);
   }
 }
 
-rda(1) void resa_reverse_numbered_path_print(const resa_t *arr) {
+void resa_reverse_numbered_path_print(const resa_t *arr) {
   if(arr->size <= 0) return;
   for(size_t i = arr->size - 1; i > 0; i--) {
     fprintf(stderr, "%lu: %s\n", i + 1, arr->arr[i].path);
@@ -134,7 +134,7 @@ rda(1) void resa_reverse_numbered_path_print(const resa_t *arr) {
   fprintf(stderr, "1: %s\n", arr->arr[0].path);
 }
 
-rda(1) void resa_i_path_print(const resa_t *arr, size_t n) {
+void resa_i_path_print(const resa_t *arr, size_t n) {
   printf("%s\n", arr->arr[MIN(n, arr->size) - 1].path);
 }
 
@@ -176,7 +176,7 @@ void resl_free(resl_t *list) {
   resn_free(n);
 }
 
-rda(1) void resl_print(const resl_t *list, uint count) {
+void resl_print(const resl_t *list, uint count) {
   resn_t *n = list->head;
   printf("{head: %p, tail: %p,\n", list->head, list->tail);
   while(n != list->tail) {
@@ -188,7 +188,7 @@ rda(1) void resl_print(const resl_t *list, uint count) {
   printf("}");
 }
 
-rda(1) void resl_path_print(const resl_t *list) {
+void resl_path_print(const resl_t *list) {
   resn_t *n = list->head;
   if(n == NULL) return;
   while(n != list->tail) {
@@ -198,7 +198,7 @@ rda(1) void resl_path_print(const resl_t *list) {
   printf("%s\n", n->path);
 }
 
-rda(1) void resl_reverse_path_print(const resl_t *list) {
+void resl_reverse_path_print(const resl_t *list) {
   resn_t *n = list->head;
   resl_t l2;
   if(n == NULL) return;
@@ -215,7 +215,7 @@ rda(1) void resl_reverse_path_print(const resl_t *list) {
   fprintf(stderr, "%s\n", n->path);
 }
 
-rda(1) void resl_numbered_path_print(const resl_t *list) {
+void resl_numbered_path_print(const resl_t *list) {
   resn_t *n = list->head;
   size_t i = 1;
   if(n == NULL) return;
@@ -226,7 +226,7 @@ rda(1) void resl_numbered_path_print(const resl_t *list) {
   fprintf(stderr, "%lu: %s\n", i++, n->path);
 }
 
-rda(1) void resl_reverse_numbered_path_print(const resl_t *list) {
+void resl_reverse_numbered_path_print(const resl_t *list) {
   resn_t *n = list->head;
   size_t i = 1;
   resl_t l2;
@@ -244,7 +244,7 @@ rda(1) void resl_reverse_numbered_path_print(const resl_t *list) {
   fprintf(stderr, "%lu: %s\n", i++, n->path);
 }
 
-rda(1) void resl_i_path_print(const resl_t *list, size_t i) {
+void resl_i_path_print(const resl_t *list, size_t i) {
   resn_t *n = list->head;
   size_t count = 0;
   if(n == NULL) return;

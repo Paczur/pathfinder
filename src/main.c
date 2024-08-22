@@ -76,8 +76,8 @@ constf static uint node_count(const char *const *expr, uint len) {
   return res;
 }
 
-rda(1) rda(2) static uint
-  handleinf(const char *str, const char *const *expr, uint len, uint count) {
+static uint handleinf(const char *str, const char *const *expr, uint len,
+                      uint count) {
   resn_t *new;
   stats_t *s;
   if(matches(ranges, str, expr, len, count)) {
@@ -97,8 +97,8 @@ rda(1) rda(2) static uint
   return 0;
 }
 
-rda(1) rda(2) static uint
-  handle(const char *str, const char *const *expr, uint len, uint count) {
+static uint handle(const char *str, const char *const *expr, uint len,
+                   uint count) {
   resv_t new;
   stats_t *s;
   if(matches(ranges, str, expr, len, count)) {
@@ -120,7 +120,7 @@ rda(1) rda(2) static uint
   return 0;
 }
 
-rda(1) static void iter_paths(const char *const *expr, uint len, uint count) {
+static void iter_paths(const char *const *expr, uint len, uint count) {
   char path[512] = ".";
   struct dirent *de;
   bool status;

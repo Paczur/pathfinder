@@ -15,9 +15,8 @@ static uint depth(const char *str) {
   return counter;
 }
 
-rda(1)
-  rda(4) static void dirname_start_distance(const uint *ranges, uint rangesl,
-                                            uint *ret, const char *str) {
+static void dirname_start_distance(const uint *ranges, uint rangesl, uint *ret,
+                                   const char *str) {
   assert(rangesl > 0);
   assert(ranges);
   assert(str);
@@ -34,8 +33,8 @@ rda(1)
   }
 }
 
-rda(1) rda(4) static void dirname_end_distance(const uint *ranges, uint rangesl,
-                                               uint *ret, const char *str) {
+static void dirname_end_distance(const uint *ranges, uint rangesl, uint *ret,
+                                 const char *str) {
   assert(rangesl > 0);
   assert(ranges);
   assert(str);
@@ -52,8 +51,8 @@ rda(1) rda(4) static void dirname_end_distance(const uint *ranges, uint rangesl,
   }
 }
 
-rda(1) rda(4) static void word_start_distance(const uint *ranges, uint rangesl,
-                                              uint *ret, const char *str) {
+static void word_start_distance(const uint *ranges, uint rangesl, uint *ret,
+                                const char *str) {
   assert(rangesl > 0);
   assert(ranges);
   assert(str);
@@ -72,8 +71,8 @@ rda(1) rda(4) static void word_start_distance(const uint *ranges, uint rangesl,
   }
 }
 
-rda(1) rda(4) static void word_end_distance(const uint *ranges, uint rangesl,
-                                            uint *ret, const char *str) {
+static void word_end_distance(const uint *ranges, uint rangesl, uint *ret,
+                              const char *str) {
   assert(rangesl > 0);
   assert(ranges);
   assert(str);
@@ -92,9 +91,8 @@ rda(1) rda(4) static void word_end_distance(const uint *ranges, uint rangesl,
   }
 }
 
-rda(1) rda(4)
-  rda(5) static void up_case_count(const uint *ranges, uint rangesl, uint *ret,
-                                   const char *str, const char *const *expr) {
+static void up_case_count(const uint *ranges, uint rangesl, uint *ret,
+                          const char *str, const char *const *expr) {
   assert(rangesl > 0);
   assert(ranges);
   assert(ret);
@@ -127,9 +125,8 @@ rda(1) rda(4)
   }
 }
 
-rda(1) rda(4)
-  rda(5) static void low_case_count(const uint *ranges, uint rangesl, uint *ret,
-                                    const char *str, const char *const *expr) {
+static void low_case_count(const uint *ranges, uint rangesl, uint *ret,
+                           const char *str, const char *const *expr) {
   assert(rangesl > 0);
   assert(ranges);
   assert(ret);
@@ -162,8 +159,8 @@ rda(1) rda(4)
   }
 }
 
-rda(1) rda(4) static void dotfile(const uint *ranges, uint rangesl, bool *ret,
-                                  const char *str, uint *dirname_start) {
+static void dotfile(const uint *ranges, uint rangesl, bool *ret,
+                    const char *str, uint *dirname_start) {
   ret[0] = str[ranges[0] - dirname_start[0]] == '.';
   for(size_t i = 1; i < rangesl / 2; i++) {
     ret[i] = str[ranges[i * 2] - dirname_start[i]] == '.';
@@ -191,7 +188,7 @@ void stats_free(stats_t *stats) {
   free(stats->dotfile);
 }
 
-rda(1) void stats_print(const stats_t *stats, uint count) {
+void stats_print(const stats_t *stats, uint count) {
   printf("{depth: %u, dirname_start: [", stats->depth);
   for(size_t i = 0; i < count - 1; i++) {
     printf("%u, ", stats->dirname_start[i]);
@@ -230,8 +227,8 @@ rda(1) void stats_print(const stats_t *stats, uint count) {
   printf("}");
 }
 
-rda(4) void stats(stats_t *stats, uint *ranges, uint rangesl,
-                  const char *const *expr, const char *str) {
+void stats(stats_t *stats, uint *ranges, uint rangesl, const char *const *expr,
+           const char *str) {
   assert(ranges);
   assert(rangesl > 0);
   assert(str);
