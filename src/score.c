@@ -1,7 +1,7 @@
 #include "score.h"
 #include <stdio.h>
 
-uint score(const stats_t *stats, uint count) {
+constf uint score(const stats_t *stats, uint count) {
   uint depth = (stats->depth - count) * SCORE_DEPTH;
   uint dirname =
     (stats->dirname_start[0] +

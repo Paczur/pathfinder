@@ -48,8 +48,8 @@ static bool node_matches(uint *range, const char *str, const char *expr) {
   return false;
 }
 
-bool matches(uint *ranges, const char *str, const char *const *expr, uint len,
-             uint count) {
+rda(2) rda(3) bool matches(uint *ranges, const char *str,
+                           const char *const *expr, uint len, uint count) {
   assert(expr);
   assert(str);
   assert(expr[0]);

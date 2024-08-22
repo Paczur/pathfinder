@@ -66,7 +66,7 @@ static void cleanup(void) {
 #endif
 }
 
-static uint node_count(const char *const *expr, uint len) {
+constf static uint node_count(const char *const *expr, uint len) {
   uint res = len;
   for(uint i = 0; i < len; i++) {
     for(uint j = 0; expr[i][j]; j++) {
@@ -76,8 +76,8 @@ static uint node_count(const char *const *expr, uint len) {
   return res;
 }
 
-static uint handleinf(const char *str, const char *const *expr, uint len,
-                      uint count) {
+rda(1) rda(2) static uint
+  handleinf(const char *str, const char *const *expr, uint len, uint count) {
   resn_t *new;
   stats_t *s;
   if(matches(ranges, str, expr, len, count)) {
@@ -97,8 +97,8 @@ static uint handleinf(const char *str, const char *const *expr, uint len,
   return 0;
 }
 
-static uint handle(const char *str, const char *const *expr, uint len,
-                   uint count) {
+rda(1) rda(2) static uint
+  handle(const char *str, const char *const *expr, uint len, uint count) {
   resv_t new;
   stats_t *s;
   if(matches(ranges, str, expr, len, count)) {
@@ -120,7 +120,7 @@ static uint handle(const char *str, const char *const *expr, uint len,
   return 0;
 }
 
-static void iter_paths(const char *const *expr, uint len, uint count) {
+rda(1) static void iter_paths(const char *const *expr, uint len, uint count) {
   char path[512] = ".";
   struct dirent *de;
   bool status;
