@@ -4,8 +4,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-#define puref __attribute__((pure))
-#define constf __attribute__((const))
+#define PURE __attribute__((pure))
+#define CONST __attribute__((const))
 
 typedef unsigned char uchar;
 typedef unsigned int uint;

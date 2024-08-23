@@ -23,8 +23,8 @@ typedef struct stats_t {
     .up_case = &(uint[size]){0},       \
     .dotfile = &(bool[size]){0},       \
   }
-void stats(stats_t *stats, uint *node_is, uint nodesl, const char *const *expr,
-           const char *str);
+void stats(stats_t *stats, uint *node_is, uint nodesl,
+           const char *restrict const *expr, const char *restrict str);
 void stats_alloc(stats_t *stats, uint node_count);
 void stats_free(stats_t *stats);
 void stats_print(const stats_t *stats, uint count);

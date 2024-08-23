@@ -3,20 +3,21 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-static bool letter(char c) {
+CONST static bool letter(char c) {
   return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 }
 
-static char uppercase(char c) {
+CONST static char uppercase(char c) {
   assert(letter(c));
   return (c >= 'a') ? c - 'a' + 'A' : c;
 }
 
-static bool equal(char c1, char c2) {
+CONST static bool equal(char c1, char c2) {
   return (letter(c1) ? uppercase(c1) : c1) == (letter(c2) ? uppercase(c2) : c2);
 }
 
-static bool node_matches(uint *range, const char *str, const char *expr) {
+static bool node_matches(uint *range, const char *restrict str,
+                         const char *restrict expr) {
   assert(expr);
   assert(str);
   assert(str[0]);
@@ -48,8 +49,8 @@ static bool node_matches(uint *range, const char *str, const char *expr) {
   return false;
 }
 
-bool matches(uint *ranges, const char *str, const char *const *expr, uint len,
-             uint count) {
+bool matches(uint *ranges, const char *restrict str,
+             const char *restrict const *expr, uint len, uint count) {
   assert(expr);
   assert(str);
   assert(expr[0]);
