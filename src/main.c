@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/resource.h>
 
 #define CMP_OPTION(buff, short, long) \
   (!strcmp(buff + 1, short) || !strcmp(buff + 1, "-" long))
@@ -48,6 +49,9 @@ bool verbose;
 bool reverse;
 bool ignore_dotfiles;
 uint max_depth = 5;
+DIR **restrict close_dirs;
+uint fds_i = 0;
+uint max_fds;
 
 uint *ranges;
 struct stat sstat;
@@ -63,7 +67,21 @@ static void cleanup(void) {
     resa_free(&arr);
   }
   free(ranges);
+  for(uint i = 0; i < fds_i; i++) {
+    closedir(close_dirs[i]);
+  }
+  free(close_dirs);
 #endif
+}
+
+static void setFds(void) {
+  struct rlimit lim;
+  if(getrlimit(RLIMIT_NOFILE, &lim)) {
+    max_fds = 0;
+    return;
+  }
+  max_fds = lim.rlim_cur;
+  close_dirs = malloc(sizeof(DIR *) * max_fds);
 }
 
 CONST static uint node_count(const char *const *expr, uint len) {
@@ -120,6 +138,23 @@ static uint handle(const char *restrict str, const char *restrict const *expr,
   return 0;
 }
 
+static void close_dir(DIR *dir) {
+  if(!max_fds) {
+    closedir(dir);
+    return;
+  }
+  if(fds_i >= max_fds) {
+    for(uint i = 0; i < max_fds; i++) {
+      closedir(close_dirs[i]);
+    }
+    fds_i = 0;
+    return;
+  }
+  close_dirs[fds_i++] = dir;
+}
+
+static void read_dir(DIR *dir) {}
+
 static void iter_paths(const char *const *expr, uint len, uint count) {
   char path[512] = ".";
   struct dirent *de;
@@ -140,7 +175,7 @@ static void iter_paths(const char *const *expr, uint len, uint count) {
   while(1) {
     de = readdir(dr_stack[stack_i]);
     if(!de) {
-      closedir(dr_stack[stack_i]);
+      close_dir(dr_stack[stack_i]);
       if(stack_i == 0) break;
       stack_i--;
       continue;
@@ -168,13 +203,13 @@ static void iter_paths(const char *const *expr, uint len, uint count) {
             (type_filter & TYPE_FILTER_FILES && S_ISREG(sstat.st_mode))) &&
            SCORE_BASE == ((unlimited) ? handleinf(path + 2, expr, len, count)
                                       : handle(path + 2, expr, len, count))) {
-          for(uint i = 0; i <= stack_i; i++) closedir(dr_stack[i]);
+          for(uint i = 0; i <= stack_i; i++) close_dir(dr_stack[i]);
           break;
         }
       } else {
         if(SCORE_BASE == ((unlimited) ? handleinf(path + 2, expr, len, count)
                                       : handle(path + 2, expr, len, count))) {
-          for(uint i = 0; i <= stack_i; i++) closedir(dr_stack[i]);
+          for(uint i = 0; i <= stack_i; i++) close_dir(dr_stack[i]);
           break;
         }
       }
@@ -254,6 +289,7 @@ int main(int argc, const char *const argv[]) {
 #ifdef NDEBUG
   stats_alloc(&st, nc);
 #endif
+  setFds();
 
   iter_paths(argv + off, argc - off, nc);
 
