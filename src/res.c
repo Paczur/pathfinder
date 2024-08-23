@@ -62,29 +62,29 @@ void resn_print(const resn_t *node, uint count) {
 bool resa_add(resa_t *arr, resv_t *val) {
   for(size_t i = 0; i < arr->size; i++) {
     if(arr->arr[i].score < val->score) {
-      if(arr->size == arr->limit) {
+      if(arr->size == arr->capacity) {
         free(arr->arr[arr->size - 1].path);
 #ifndef NDEBUG
         stats_free(&arr->arr[arr->size - 1].stats);
 #endif
       }
-      arr->size = (arr->size == arr->limit) ? arr->limit : arr->size + 1;
+      arr->size = (arr->size == arr->capacity) ? arr->capacity : arr->size + 1;
       memmove(arr->arr + i + 1, arr->arr + i,
               (arr->size - i - 1) * sizeof(resv_t));
       arr->arr[i] = *val;
       return true;
     }
   }
-  if(arr->size < arr->limit) {
+  if(arr->size < arr->capacity) {
     arr->arr[arr->size] = *val;
-    arr->size = (arr->size == arr->limit) ? arr->limit : arr->size + 1;
+    arr->size = (arr->size == arr->capacity) ? arr->capacity : arr->size + 1;
     return true;
   }
   return false;
 }
 
 void resa_alloc(resa_t *arr) {
-  arr->arr = malloc(arr->limit * sizeof(arr->arr[0]));
+  arr->arr = malloc(arr->capacity * sizeof(arr->arr[0]));
 }
 
 void resa_free(resa_t *arr) {

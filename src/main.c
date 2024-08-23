@@ -49,15 +49,12 @@ bool verbose;
 bool reverse;
 bool ignore_dotfiles;
 uint max_depth = 5;
-DIR **restrict close_dirs;
-uint fds_i = 0;
-uint max_fds;
 
 uint *ranges;
 struct stat sstat;
 stats_t st;
 resl_t list;
-resa_t arr = {.size = 0, .limit = 9};
+resa_t arr = {.size = 0, .capacity = 9};
 
 static void cleanup(void) {
 #ifndef NDEBUG
@@ -67,21 +64,7 @@ static void cleanup(void) {
     resa_free(&arr);
   }
   free(ranges);
-  for(uint i = 0; i < fds_i; i++) {
-    closedir(close_dirs[i]);
-  }
-  free(close_dirs);
 #endif
-}
-
-static void setFds(void) {
-  struct rlimit lim;
-  if(getrlimit(RLIMIT_NOFILE, &lim)) {
-    max_fds = 0;
-    return;
-  }
-  max_fds = lim.rlim_cur;
-  close_dirs = malloc(sizeof(DIR *) * max_fds);
 }
 
 CONST static uint node_count(const char *const *expr, uint len) {
@@ -138,27 +121,29 @@ static uint handle(const char *restrict str, const char *restrict const *expr,
   return 0;
 }
 
-static void close_dir(DIR *dir) {
-  if(!max_fds) {
-    closedir(dir);
-    return;
-  }
-  if(fds_i >= max_fds) {
-    for(uint i = 0; i < max_fds; i++) {
-      closedir(close_dirs[i]);
-    }
-    fds_i = 0;
-    return;
-  }
-  close_dirs[fds_i++] = dir;
+PURE static bool de_type_matches(const struct dirent *de) {
+  return (type_filter & TYPE_FILTER_FILES && de->d_type == DT_REG) ||
+         (type_filter & TYPE_FILTER_DIRS && de->d_type == DT_DIR) ||
+         (type_filter & TYPE_FILTER_LINKS && de->d_type == DT_LNK) ||
+         type_filter == TYPE_FILTER_ALL;
 }
 
-static void read_dir(DIR *dir) {}
+CONST static bool de_useless(const struct dirent *de) {
+  return (de->d_name[0] == '.' &&
+          (de->d_name[1] == 0 ||
+           (de->d_name[1] == '.' && de->d_name[2] == 0))) ||
+         (de->d_type != DT_DIR && !de_type_matches(de));
+}
 
-static void iter_paths(const char *const *expr, uint len, uint count) {
+static bool link_type_matches(const char *path) {
+  return !stat(path, &sstat) &&
+         ((type_filter & TYPE_FILTER_DIRS && S_ISDIR(sstat.st_mode)) ||
+          (type_filter & TYPE_FILTER_FILES && S_ISREG(sstat.st_mode)));
+}
+
+static void dfs_paths(const char *const *expr, uint len, uint count) {
   char path[512] = ".";
   struct dirent *de;
-  bool status;
   uint *null_stack;
   uint new_null = 1;
   DIR **dr_stack = malloc(max_depth * sizeof(DIR *));
@@ -175,44 +160,22 @@ static void iter_paths(const char *const *expr, uint len, uint count) {
   while(1) {
     de = readdir(dr_stack[stack_i]);
     if(!de) {
-      close_dir(dr_stack[stack_i]);
+      closedir(dr_stack[stack_i]);
       if(stack_i == 0) break;
       stack_i--;
       continue;
     }
-    if(de->d_type != DT_DIR && de->d_name[0] == '.' &&
-       (ignore_dotfiles || de->d_name[1] == 0 ||
-        (de->d_name[1] == '.' && de->d_name[2] == 0))) {
-      continue;
-    }
+    if(de_useless(de)) continue;
+
     path[null_stack[stack_i]] = '/';
     new_null = stpcpy(path + null_stack[stack_i] + 1, de->d_name) - path;
-    if(de->d_name[0] == '.' &&
-       (!de->d_name[1] || (de->d_name[1] == '.' && !de->d_name[2])))
-      continue;
 
-    if((de->d_name[0] != '.' || !ignore_dotfiles) &&
-       ((type_filter & TYPE_FILTER_FILES && de->d_type == DT_REG) ||
-        (type_filter & TYPE_FILTER_DIRS && de->d_type == DT_DIR) ||
-        (type_filter & TYPE_FILTER_LINKS && de->d_type == DT_LNK) ||
-        type_filter == TYPE_FILTER_ALL)) {
-      if(type_filter & TYPE_FILTER_LINKS) {
-        status = !stat(path, &sstat);
-        if(status &&
-           ((type_filter & TYPE_FILTER_DIRS && S_ISDIR(sstat.st_mode)) ||
-            (type_filter & TYPE_FILTER_FILES && S_ISREG(sstat.st_mode))) &&
-           SCORE_BASE == ((unlimited) ? handleinf(path + 2, expr, len, count)
-                                      : handle(path + 2, expr, len, count))) {
-          for(uint i = 0; i <= stack_i; i++) close_dir(dr_stack[i]);
-          break;
-        }
-      } else {
-        if(SCORE_BASE == ((unlimited) ? handleinf(path + 2, expr, len, count)
-                                      : handle(path + 2, expr, len, count))) {
-          for(uint i = 0; i <= stack_i; i++) close_dir(dr_stack[i]);
-          break;
-        }
-      }
+    if((de->d_name[0] != '.' || !ignore_dotfiles) && de_type_matches(de) &&
+       (!(type_filter & TYPE_FILTER_LINKS) || link_type_matches(path)) &&
+       SCORE_BASE == ((unlimited) ? handleinf(path + 2, expr, len, count)
+                                  : handle(path + 2, expr, len, count))) {
+      for(uint i = 0; i <= stack_i; i++) closedir(dr_stack[i]);
+      break;
     }
 
     if(de->d_type == DT_DIR && stack_i + 1 < max_depth) {
@@ -248,7 +211,7 @@ int main(int argc, const char *const argv[]) {
       if(t < 1) {
         unlimited = true;
       } else {
-        arr.limit = (uint)t;
+        arr.capacity = (uint)t;
       }
       off++;
     } else if(CMP_OPTION(argv[off], "v", "verbose")) {
@@ -289,9 +252,8 @@ int main(int argc, const char *const argv[]) {
 #ifdef NDEBUG
   stats_alloc(&st, nc);
 #endif
-  setFds();
 
-  iter_paths(argv + off, argc - off, nc);
+  dfs_paths(argv + off, argc - off, nc);
 
 #ifdef NDEBUG
   stats_free(&st);
