@@ -8,27 +8,32 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#define HELP_MSG                                                             \
-  "Usage: pf [OPTION]... EXPR...\n"                                          \
-  "Find path(s) best matching EXPR using substring matches.\n"               \
-  "\n"                                                                       \
-  "Symlinks that point to directories are considered in results,\n"          \
-  "but aren't followed in order to avoid infinite loops.\n"                  \
-  "\n"                                                                       \
-  "General options:\n"                                                       \
-  "-h, --help          Show help\n"                                          \
-  "-v, --verbose       Print errors to stderr\n"                             \
-  "-m, --max-matches   Number of matches to print (default 9)\n"             \
-  "-r, --reverse       Reverse display order\n"                              \
-  "-i, --non-interactive Print  paths immediatly, don't wait for user "      \
-  "choice\n"                                                                 \
-  "\n"                                                                       \
-  "Search Options:\n"                                                        \
-  "--ignore-dotfiles   Skip directories and symlinks beginning with \".\"\n" \
+#define HELP_MSG                                                               \
+  "Usage: pf [OPTION]... EXPR...\n"                                            \
+  "Find path(s) best matching EXPR using substring matches.\n"                 \
+  "\n"                                                                         \
+  "Symlinks that point to directories are considered in results,\n"            \
+  "but aren't followed in order to avoid infinite loops.\n"                    \
+  "\n"                                                                         \
+  "General options:\n"                                                         \
+  "-h, --help          Show help\n"                                            \
+  "-v, --verbose       Print errors to stderr\n"                               \
+  "-m, --max-matches   Number of matches to print (default 9)\n"               \
+  "-r, --reverse       Reverse display order\n"                                \
+  "-i, --interactive   Possible options: always, auto, never (default auto)\n" \
+  "\n"                                                                         \
+  "Search Options:\n"                                                          \
+  "--ignore-dotfiles   Skip directories and symlinks beginning with \".\"\n"   \
   "-M, --max-depth     Max depth to search down the tree (default 5)\n"
 
+typedef enum {
+  INTERACTIVE_AUTO,
+  INTERACTIVE_ALWAYS,
+  INTERACTIVE_NEVER,
+} interactive_t;
+
 bool unlimited;
-bool interactive = true;
+interactive_t interactive;
 bool verbose;
 bool reverse;
 bool ignore_dotfiles;
@@ -193,9 +198,17 @@ int main(int argc, const char *const argv[]) {
       }
       max_depth = t;
       off++;
-    } else if(!strcmp(argv[off], "-i") ||
-              !strcmp(argv[off], "--non-interactive")) {
-      interactive = false;
+    } else if(!strcmp(argv[off], "-i") || !strcmp(argv[off], "--interactive")) {
+      if(off + 1 >= (uint)argc) goto error;
+      if(!strcmp(argv[off + 1], "always")) {
+        interactive = INTERACTIVE_ALWAYS;
+      } else if(!strcmp(argv[off + 1], "auto")) {
+        interactive = INTERACTIVE_AUTO;
+      } else if(!strcmp(argv[off + 1], "never")) {
+        interactive = INTERACTIVE_NEVER;
+      } else {
+        goto error;
+      }
     } else if(!strcmp(argv[off], "-r") || !strcmp(argv[off], "--reverse")) {
       reverse = true;
     }
@@ -229,7 +242,10 @@ int main(int argc, const char *const argv[]) {
 
   if((unlimited && !list.tail) || (!unlimited && !arr.size)) goto cleanup;
 
-  if(interactive) {
+  if(interactive == INTERACTIVE_ALWAYS ||
+     (interactive == INTERACTIVE_AUTO &&
+      ((unlimited && resl_length(&list) > 1) ||
+       (!unlimited && resa_length(&arr) > 1)))) {
     if(unlimited) {
       if(reverse) {
         resl_numbered_path_print(&list);
