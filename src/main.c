@@ -9,7 +9,6 @@
 #include <sys/stat.h>
 #include <sys/resource.h>
 
-<<<<<<< HEAD
 #define CMP_OPTION(buff, short, long) \
   (!strcmp(buff + 1, short) || !strcmp(buff + 1, "-" long))
 
@@ -22,8 +21,7 @@
   "-v, --verbose         Print errors to stderr\n"                             \
   "-m, --max-matches     Number of matches to print (default 9)\n"             \
   "-r, --reverse         Reverse display order\n"                              \
-  "-i, --non-interactive Print  paths immediatly, don't wait for user "        \
-  "choice\n"                                                                   \
+  "-i, --interactive   Possible options: always, auto, never (default auto)\n" \
   "\n"                                                                         \
   "Search Options:\n"                                                          \
   "-I, --ignore-dotfiles   Skip directories and symlinks beginning with "      \
@@ -36,32 +34,12 @@
   "(default)\n"                                                                \
   "-fl, --files-with-links Consider files with symlink to files\n"
 
-  typedef enum {
-    TYPE_FILTER_ALL = 1,
-    TYPE_FILTER_DIRS = 2,
-    TYPE_FILTER_FILES = 4,
-    TYPE_FILTER_LINKS = 8,
-  } TYPE_FILTER;
-
-TYPE_FILTER type_filter = TYPE_FILTER_DIRS | TYPE_FILTER_LINKS;
-=======
-#define HELP_MSG                                                               \
-  "Usage: pf [OPTION]... EXPR...\n"                                            \
-  "Find path(s) best matching EXPR using substring matches.\n"                 \
-  "\n"                                                                         \
-  "Symlinks that point to directories are considered in results,\n"            \
-  "but aren't followed in order to avoid infinite loops.\n"                    \
-  "\n"                                                                         \
-  "General options:\n"                                                         \
-  "-h, --help          Show help\n"                                            \
-  "-v, --verbose       Print errors to stderr\n"                               \
-  "-m, --max-matches   Number of matches to print (default 9)\n"               \
-  "-r, --reverse       Reverse display order\n"                                \
-  "-i, --interactive   Possible options: always, auto, never (default auto)\n" \
-  "\n"                                                                         \
-  "Search Options:\n"                                                          \
-  "--ignore-dotfiles   Skip directories and symlinks beginning with \".\"\n"   \
-  "-M, --max-depth     Max depth to search down the tree (default 5)\n"
+typedef enum {
+  TYPE_FILTER_ALL = 1,
+  TYPE_FILTER_DIRS = 2,
+  TYPE_FILTER_FILES = 4,
+  TYPE_FILTER_LINKS = 8,
+} TYPE_FILTER;
 
 typedef enum {
   INTERACTIVE_AUTO,
@@ -69,7 +47,7 @@ typedef enum {
   INTERACTIVE_NEVER,
 } interactive_t;
 
->>>>>>> 78983b6f5bbb614bdc5f40068cfe6bfa83593f9b
+TYPE_FILTER type_filter = TYPE_FILTER_DIRS | TYPE_FILTER_LINKS;
 bool unlimited;
 interactive_t interactive;
 bool verbose;

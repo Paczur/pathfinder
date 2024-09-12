@@ -36,7 +36,7 @@ typedef struct resa_t {
 bool resa_add(resa_t *arr, resv_t *val);
 void resa_alloc(resa_t *arr);
 void resa_free(resa_t *arr);
-uint resa_length(const resa_t *arr);
+PURE uint resa_length(const resa_t *arr);
 void resa_print(const resa_t *arr, uint count);
 void resa_path_print(const resa_t *arr);
 void resa_reverse_path_print(const resa_t *arr);
@@ -50,7 +50,7 @@ typedef struct resl_t {
 } resl_t;
 void resl_add(resl_t *list, resn_t *node);
 void resl_free(resl_t *list);
-uint resl_length(const resl_t *list);
+PURE uint resl_length(const resl_t *list);
 void resl_print(const resl_t *list, uint count);
 void resl_path_print(const resl_t *list);
 void resl_reverse_path_print(const resl_t *list);
