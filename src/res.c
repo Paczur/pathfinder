@@ -94,6 +94,8 @@ void resa_free(resa_t *arr) {
   free(arr->arr);
 }
 
+uint resa_length(const resa_t *arr) { return arr->size; }
+
 void resa_print(const resa_t *arr, uint count) {
   printf("[");
   if(arr->size > 0) {
@@ -174,6 +176,16 @@ void resl_free(resl_t *list) {
     n = t;
   }
   resn_free(n);
+}
+
+uint resl_length(const resl_t *list) {
+  uint count = 0;
+  const resn_t *curr = list->head;
+  while(curr != NULL) {
+    count++;
+    curr = curr->next;
+  }
+  return count;
 }
 
 void resl_print(const resl_t *list, uint count) {

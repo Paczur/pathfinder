@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <sys/resource.h>
 
+<<<<<<< HEAD
 #define CMP_OPTION(buff, short, long) \
   (!strcmp(buff + 1, short) || !strcmp(buff + 1, "-" long))
 
@@ -35,16 +36,42 @@
   "(default)\n"                                                                \
   "-fl, --files-with-links Consider files with symlink to files\n"
 
-typedef enum {
-  TYPE_FILTER_ALL = 1,
-  TYPE_FILTER_DIRS = 2,
-  TYPE_FILTER_FILES = 4,
-  TYPE_FILTER_LINKS = 8,
-} TYPE_FILTER;
+  typedef enum {
+    TYPE_FILTER_ALL = 1,
+    TYPE_FILTER_DIRS = 2,
+    TYPE_FILTER_FILES = 4,
+    TYPE_FILTER_LINKS = 8,
+  } TYPE_FILTER;
 
 TYPE_FILTER type_filter = TYPE_FILTER_DIRS | TYPE_FILTER_LINKS;
+=======
+#define HELP_MSG                                                               \
+  "Usage: pf [OPTION]... EXPR...\n"                                            \
+  "Find path(s) best matching EXPR using substring matches.\n"                 \
+  "\n"                                                                         \
+  "Symlinks that point to directories are considered in results,\n"            \
+  "but aren't followed in order to avoid infinite loops.\n"                    \
+  "\n"                                                                         \
+  "General options:\n"                                                         \
+  "-h, --help          Show help\n"                                            \
+  "-v, --verbose       Print errors to stderr\n"                               \
+  "-m, --max-matches   Number of matches to print (default 9)\n"               \
+  "-r, --reverse       Reverse display order\n"                                \
+  "-i, --interactive   Possible options: always, auto, never (default auto)\n" \
+  "\n"                                                                         \
+  "Search Options:\n"                                                          \
+  "--ignore-dotfiles   Skip directories and symlinks beginning with \".\"\n"   \
+  "-M, --max-depth     Max depth to search down the tree (default 5)\n"
+
+typedef enum {
+  INTERACTIVE_AUTO,
+  INTERACTIVE_ALWAYS,
+  INTERACTIVE_NEVER,
+} interactive_t;
+
+>>>>>>> 78983b6f5bbb614bdc5f40068cfe6bfa83593f9b
 bool unlimited;
-bool interactive = true;
+interactive_t interactive;
 bool verbose;
 bool reverse;
 bool ignore_dotfiles;
@@ -224,9 +251,18 @@ int main(int argc, const char *const argv[]) {
       }
       max_depth = t;
       off++;
-    } else if(CMP_OPTION(argv[off], "i", "non-interactive")) {
-      interactive = false;
-    } else if(CMP_OPTION(argv[off], "r", "reverse")) {
+    } else if(!strcmp(argv[off], "-i") || !strcmp(argv[off], "--interactive")) {
+      if(off + 1 >= (uint)argc) goto error;
+      if(!strcmp(argv[off + 1], "always")) {
+        interactive = INTERACTIVE_ALWAYS;
+      } else if(!strcmp(argv[off + 1], "auto")) {
+        interactive = INTERACTIVE_AUTO;
+      } else if(!strcmp(argv[off + 1], "never")) {
+        interactive = INTERACTIVE_NEVER;
+      } else {
+        goto error;
+      }
+    } else if(!strcmp(argv[off], "-r") || !strcmp(argv[off], "--reverse")) {
       reverse = true;
     } else if(CMP_OPTION(argv[off], "a", "all-types")) {
       type_filter = TYPE_FILTER_ALL;
@@ -270,7 +306,10 @@ int main(int argc, const char *const argv[]) {
 
   if((unlimited && !list.tail) || (!unlimited && !arr.size)) goto cleanup;
 
-  if(interactive) {
+  if(interactive == INTERACTIVE_ALWAYS ||
+     (interactive == INTERACTIVE_AUTO &&
+      ((unlimited && resl_length(&list) > 1) ||
+       (!unlimited && resa_length(&arr) > 1)))) {
     if(unlimited) {
       if(reverse) {
         resl_numbered_path_print(&list);
