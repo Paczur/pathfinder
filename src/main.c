@@ -29,7 +29,8 @@
   "\".\"\n"                                                                 \
   "-M, --max-depth         Max depth to search down the tree (default 5)\n" \
   "-t, --types             Types of filesystem object considered when "     \
-  "searching, represented by by string of letters(a-all, d-dir, f-file, "   \
+  "searching, represented by by string of letters\n"                        \
+  "                        (a-all, d-dir, f-file, "                         \
   "l-link, D-link to dir, F-link to file) (default dfl)\n"
 
 typedef enum {
