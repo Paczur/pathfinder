@@ -84,48 +84,49 @@ CONST static uint node_count(const char *const *expr, uint len) {
   return res;
 }
 
-static uint handleinf(const char *restrict str,
-                      const char *restrict const *expr, uint len, uint count) {
+static uint addinf(const char *restrict str, const char *restrict const *expr,
+                   uint count) {
   resn_t *new;
   stats_t *s;
-  if(matches(ranges, str, expr, len, count)) {
-    new = malloc(sizeof(resn_t));
+  new = malloc(sizeof(resn_t));
 #ifndef NDEBUG
-    s = &new->stats;
+  s = &new->stats;
 #else
-    s = &st;
+  s = &st;
 #endif
-    resn_alloc(new, strlen(str) + 1, count);
-    strcpy(new->path, str);
-    stats(s, ranges, count * 2, expr, str);
-    new->score = score(s, count);
-    resl_add(&list, new);
-    return new->score;
+  resn_alloc(new, strlen(str) + 1, count);
+  strcpy(new->path, str);
+  stats(s, ranges, count * 2, expr, str);
+  new->score = score(s, count);
+  resl_add(&list, new);
+  return new->score;
+  return 0;
+}
+
+static uint addfin(const char *restrict str, const char *restrict const *expr,
+                   uint count) {
+  resv_t new;
+  stats_t *s;
+#ifndef NDEBUG
+  s = &new.stats;
+#else
+  s = &st;
+#endif
+  resv_alloc(&new, strlen(str) + 1, count);
+  strcpy(new.path, str);
+  stats(s, ranges, count * 2, expr, str);
+  new.score = score(s, count);
+  if(!resa_add(&arr, &new)) {
+    resv_free(&new);
+  } else {
+    return new.score;
   }
   return 0;
 }
 
-static uint handle(const char *restrict str, const char *restrict const *expr,
-                   uint len, uint count) {
-  resv_t new;
-  stats_t *s;
-  if(matches(ranges, str, expr, len, count)) {
-#ifndef NDEBUG
-    s = &new.stats;
-#else
-    s = &st;
-#endif
-    resv_alloc(&new, strlen(str) + 1, count);
-    strcpy(new.path, str);
-    stats(s, ranges, count * 2, expr, str);
-    new.score = score(s, count);
-    if(!resa_add(&arr, &new)) {
-      resv_free(&new);
-    } else {
-      return new.score;
-    }
-  }
-  return 0;
+static uint add(const char *restrict str, const char *restrict const *expr,
+                uint count) {
+  return (unlimited) ? addinf(str, expr, count) : addfin(str, expr, count);
 }
 
 PURE static bool de_type_matches(const struct dirent *de) {
@@ -145,10 +146,9 @@ CONST static bool de_useless(const struct dirent *de) {
 }
 
 static bool link_type_matches(const char *path) {
-  return type_filter & TYPE_FILTER_LINKS ||
-         (!stat(path, &sstat) &&
-          ((type_filter & TYPE_FILTER_DIR_LINKS && S_ISDIR(sstat.st_mode)) ||
-           (type_filter & TYPE_FILTER_FILE_LINKS && S_ISREG(sstat.st_mode))));
+  return !stat(path, &sstat) &&
+         ((type_filter & TYPE_FILTER_DIR_LINKS && S_ISDIR(sstat.st_mode)) ||
+          (type_filter & TYPE_FILTER_FILE_LINKS && S_ISREG(sstat.st_mode)));
 }
 
 static void dfs_paths(const char *const *expr, uint len, uint count) {
@@ -180,13 +180,15 @@ static void dfs_paths(const char *const *expr, uint len, uint count) {
     path[null_stack[stack_i]] = '/';
     new_null = stpcpy(path + null_stack[stack_i] + 1, de->d_name) - path;
 
-    if((de->d_name[0] != '.' || !ignore_dotfiles) && de_type_matches(de) &&
-       (!(type_filter & (TYPE_FILTER_DIR_LINKS | TYPE_FILTER_FILE_LINKS)) ||
-        link_type_matches(path)) &&
-       SCORE_BASE == ((unlimited) ? handleinf(path + 2, expr, len, count)
-                                  : handle(path + 2, expr, len, count))) {
-      for(uint i = 0; i <= stack_i; i++) closedir(dr_stack[i]);
-      break;
+    if((de->d_name[0] != '.' || !ignore_dotfiles) && de_type_matches(de)) {
+      if(de->d_type == DT_LNK && !(type_filter & TYPE_FILTER_LINKS)) {
+        if(matches(ranges, path + 2, expr, len, count) &&
+           link_type_matches(path)) {
+          add(path + 2, expr, count);
+        }
+      } else if(matches(ranges, path + 2, expr, len, count)) {
+        add(path + 2, expr, count);
+      }
     }
 
     if(de->d_type == DT_DIR && stack_i + 1 < max_depth) {
