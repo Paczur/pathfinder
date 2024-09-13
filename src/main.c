@@ -12,33 +12,33 @@
 #define CMP_OPTION(buff, short, long) \
   (!strcmp(buff + 1, short) || !strcmp(buff + 1, "-" long))
 
-#define HELP_MSG                                                               \
-  "Usage: pf [OPTION]... EXPR...\n"                                            \
-  "Find path(s) best matching EXPR using substring matches.\n"                 \
-  "\n"                                                                         \
-  "General options:\n"                                                         \
-  "-h, --help            Show help\n"                                          \
-  "-v, --verbose         Print errors to stderr\n"                             \
-  "-m, --max-matches     Number of matches to print (default 9)\n"             \
-  "-r, --reverse         Reverse display order\n"                              \
-  "-i, --interactive   Possible options: always, auto, never (default auto)\n" \
-  "\n"                                                                         \
-  "Search Options:\n"                                                          \
-  "-I, --ignore-dotfiles   Skip directories and symlinks beginning with "      \
-  "\".\"\n"                                                                    \
-  "-M, --max-depth         Max depth to search down the tree (default 5)\n"    \
-  "-a, --all-types         Don't filter results based on type\n"               \
-  "-d, --dirs-only         Consider directories only\n"                        \
-  "-f, --files-only        Consider files only\n"                              \
-  "-dl, --dirs-with-links  Consider directories with symlinks to directories " \
-  "(default)\n"                                                                \
-  "-fl, --files-with-links Consider files with symlink to files\n"
+#define HELP_MSG                                                            \
+  "Usage: pf [OPTION]... EXPR...\n"                                         \
+  "Find path(s) best matching EXPR using substring matches.\n"              \
+  "\n"                                                                      \
+  "General options:\n"                                                      \
+  "-h, --help            Show help\n"                                       \
+  "-v, --verbose         Print errors to stderr\n"                          \
+  "-m, --max-matches     Number of matches to print (default 9)\n"          \
+  "-r, --reverse         Reverse display order\n"                           \
+  "-i, --interactive     Possible options: always, auto, never (default "   \
+  "auto)\n"                                                                 \
+  "\n"                                                                      \
+  "Search Options:\n"                                                       \
+  "-I, --ignore-dotfiles   Skip directories and symlinks beginning with "   \
+  "\".\"\n"                                                                 \
+  "-M, --max-depth         Max depth to search down the tree (default 5)\n" \
+  "-t, --types             Types of filesystem object considered when "     \
+  "searching, represented by by string of letters(a-all, d-dir, f-file, "   \
+  "l-link, D-link to dir, F-link to file) (default dfl)\n"
 
 typedef enum {
   TYPE_FILTER_ALL = 1,
   TYPE_FILTER_DIRS = 2,
   TYPE_FILTER_FILES = 4,
   TYPE_FILTER_LINKS = 8,
+  TYPE_FILTER_DIR_LINKS = 16,
+  TYPE_FILTER_FILE_LINKS = 32,
 } TYPE_FILTER;
 
 typedef enum {
@@ -47,7 +47,8 @@ typedef enum {
   INTERACTIVE_NEVER,
 } interactive_t;
 
-TYPE_FILTER type_filter = TYPE_FILTER_DIRS | TYPE_FILTER_LINKS;
+TYPE_FILTER type_filter =
+  TYPE_FILTER_DIRS | TYPE_FILTER_FILES | TYPE_FILTER_LINKS;
 bool unlimited;
 interactive_t interactive;
 bool verbose;
@@ -129,7 +130,9 @@ static uint handle(const char *restrict str, const char *restrict const *expr,
 PURE static bool de_type_matches(const struct dirent *de) {
   return (type_filter & TYPE_FILTER_FILES && de->d_type == DT_REG) ||
          (type_filter & TYPE_FILTER_DIRS && de->d_type == DT_DIR) ||
-         (type_filter & TYPE_FILTER_LINKS && de->d_type == DT_LNK) ||
+         (type_filter & (TYPE_FILTER_LINKS | TYPE_FILTER_DIR_LINKS |
+                         TYPE_FILTER_FILE_LINKS) &&
+          de->d_type == DT_LNK) ||
          type_filter == TYPE_FILTER_ALL;
 }
 
@@ -141,9 +144,10 @@ CONST static bool de_useless(const struct dirent *de) {
 }
 
 static bool link_type_matches(const char *path) {
-  return !stat(path, &sstat) &&
-         ((type_filter & TYPE_FILTER_DIRS && S_ISDIR(sstat.st_mode)) ||
-          (type_filter & TYPE_FILTER_FILES && S_ISREG(sstat.st_mode)));
+  return type_filter & TYPE_FILTER_LINKS ||
+         (!stat(path, &sstat) &&
+          ((type_filter & TYPE_FILTER_DIR_LINKS && S_ISDIR(sstat.st_mode)) ||
+           (type_filter & TYPE_FILTER_FILE_LINKS && S_ISREG(sstat.st_mode))));
 }
 
 static void dfs_paths(const char *const *expr, uint len, uint count) {
@@ -176,7 +180,8 @@ static void dfs_paths(const char *const *expr, uint len, uint count) {
     new_null = stpcpy(path + null_stack[stack_i] + 1, de->d_name) - path;
 
     if((de->d_name[0] != '.' || !ignore_dotfiles) && de_type_matches(de) &&
-       (!(type_filter & TYPE_FILTER_LINKS) || link_type_matches(path)) &&
+       (!(type_filter & (TYPE_FILTER_DIR_LINKS | TYPE_FILTER_FILE_LINKS)) ||
+        link_type_matches(path)) &&
        SCORE_BASE == ((unlimited) ? handleinf(path + 2, expr, len, count)
                                   : handle(path + 2, expr, len, count))) {
       for(uint i = 0; i <= stack_i; i++) closedir(dr_stack[i]);
@@ -231,19 +236,47 @@ int main(int argc, const char *const argv[]) {
       off++;
     } else if(!strcmp(argv[off], "-i") || !strcmp(argv[off], "--interactive")) {
       if(off + 1 >= (uint)argc) goto error;
-      if(!strcmp(argv[off + 1], "always")) {
+      off++;
+      if(!strcmp(argv[off], "always")) {
         interactive = INTERACTIVE_ALWAYS;
-      } else if(!strcmp(argv[off + 1], "auto")) {
+      } else if(!strcmp(argv[off], "auto")) {
         interactive = INTERACTIVE_AUTO;
-      } else if(!strcmp(argv[off + 1], "never")) {
+      } else if(!strcmp(argv[off], "never")) {
         interactive = INTERACTIVE_NEVER;
       } else {
         goto error;
       }
     } else if(!strcmp(argv[off], "-r") || !strcmp(argv[off], "--reverse")) {
       reverse = true;
-    } else if(CMP_OPTION(argv[off], "a", "all-types")) {
-      type_filter = TYPE_FILTER_ALL;
+    } else if(CMP_OPTION(argv[off], "t", "types")) {
+      if(off + 1 >= (uint)argc) goto error;
+      off++;
+      type_filter = 0;
+      for(uint i = 0; argv[off][i] != 0; i++) {
+        switch(argv[off][i]) {
+        case 'f':
+          type_filter |= TYPE_FILTER_FILES;
+          break;
+        case 'd':
+          type_filter |= TYPE_FILTER_DIRS;
+          break;
+        case 'l':
+          type_filter |= TYPE_FILTER_LINKS;
+          break;
+        case 'F':
+          type_filter |= TYPE_FILTER_FILE_LINKS;
+          break;
+        case 'D':
+          type_filter |= TYPE_FILTER_DIR_LINKS;
+          break;
+        case 'a':
+          type_filter |= TYPE_FILTER_ALL;
+          break;
+        default:
+          goto error;
+          break;
+        }
+      }
     } else if(CMP_OPTION(argv[off], "f", "files-only")) {
       type_filter = TYPE_FILTER_FILES;
     } else if(CMP_OPTION(argv[off], "d", "dirs-only")) {

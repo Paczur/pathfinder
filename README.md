@@ -16,17 +16,16 @@ Built to try out TDD. Primarly designed for combining with cd for quick system n
   Search Options:
   -I, --ignore-dotfiles   Skip directories and symlinks beginning with "."
   -M, --max-depth         Max depth to search down the tree (default 5)
-  -a, --all-types         Don't filter results based on type
-  -d, --dirs-only         Consider directories only
-  -f, --files-only        Consider files only
-  -dl, --dirs-with-links  Consider directories with symlinks to directories (default)
-  -fl, --files-with-links Consider files with symlink to files
+  -t, --types             Types of filesystem object considered when
+                          searching, represented by by string of letters
+                          (a-all, d-dir, f-file, l-link, D-link to dir, F-link to file)
+                          (default dfl)
 ```
 
 ### Recommended function to put in .bashrc
 ```
 cdd() {
-  local path="$(pf "$1")"
+  local path="$(pf -t dD $@)"
   if [ -n "$path" ]; then
     cd "$path"
   fi
