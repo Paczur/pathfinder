@@ -25,7 +25,7 @@ Built to try out TDD. Primarly designed for combining with cd for quick system n
 ### Recommended function to put in .bashrc
 ```
 cdd() {
-  local path="$(pf -t dD $@)"
+  local path="$(pf -t dD "$@")"
   if [ -n "$path" ]; then
     cd "$path"
   fi
