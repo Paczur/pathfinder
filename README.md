@@ -9,17 +9,22 @@ Primarly designed for combining with cd for quick system naviagtion.
   General options:
   -h, --help            Show help
   -v, --verbose         Print errors to stderr
-  -m, --max-matches     Number of matches to print (default 9)
-  -r, --reverse         Reverse display order
-  -i, --non-interactive Print  paths immediatly, don't wait for user choice
 
-  Search Options:
-  -I, --ignore-dotfiles   Skip directories and symlinks beginning with "."
-  -M, --max-depth         Max depth to search down the tree (default 5)
-  -t, --types             Types of filesystem object considered when
-                          searching, represented by by string of letters
-                          (a-all, d-dir, f-file, l-link, D-link to dir, F-link to file)
-                          (default dfl)
+  Traverse Options:
+  -d, --depth        Max depth to search down the tree (default 5)
+  -f, --file         Get paths from file instead of traversing (use "-" for stdin)
+  -M, --mount        Don't cross device boundaries
+
+  Filter Options:
+  -t, --types        Types of entities considered when searching,
+                     represented by by string of letters
+                     (a-all, d-dir, f-file, l-link, D-link to dir, F-link to file)
+                     (default dfl)
+
+  Print Options:
+  -i, --interactive     Possible options: always, auto, never (default auto)
+  -m, --matches         Number of matches to print (default 9)
+  -r, --reverse         Reverse display order
 ```
 
 ### Recommended function to put in .bashrc

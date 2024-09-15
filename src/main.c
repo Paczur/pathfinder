@@ -9,29 +9,32 @@
 #include <sys/stat.h>
 #include <sys/resource.h>
 
-#define CMP_OPTION(buff, short, long) \
-  (!strcmp(buff + 1, short) || !strcmp(buff + 1, "-" long))
-
-#define HELP_MSG                                                            \
-  "Usage: pf [OPTION]... EXPR...\n"                                         \
-  "Find path(s) best matching EXPR using substring matches.\n"              \
-  "\n"                                                                      \
-  "General options:\n"                                                      \
-  "-h, --help            Show help\n"                                       \
-  "-v, --verbose         Print errors to stderr\n"                          \
-  "-m, --max-matches     Number of matches to print (default 9)\n"          \
-  "-r, --reverse         Reverse display order\n"                           \
-  "-i, --interactive     Possible options: always, auto, never (default "   \
-  "auto)\n"                                                                 \
-  "\n"                                                                      \
-  "Search Options:\n"                                                       \
-  "-I, --ignore-dotfiles   Skip directories and symlinks beginning with "   \
-  "\".\"\n"                                                                 \
-  "-M, --max-depth         Max depth to search down the tree (default 5)\n" \
-  "-t, --types             Types of filesystem object considered when "     \
-  "searching, represented by by string of letters\n"                        \
-  "                        (a-all, d-dir, f-file, "                         \
-  "l-link, D-link to dir, F-link to file) (default dfl)\n"
+#define HELP_MSG                                                        \
+  "pf [OPTION] ... EXPR ...\n"                                          \
+  "Find path(s) best matching EXPR using substring matches.\n"          \
+  "\n"                                                                  \
+  "General options:\n"                                                  \
+  "-h, --help     Show help\n"                                          \
+  "-v, --verbose  Print errors to stderr\n"                             \
+  "\n"                                                                  \
+  "Traverse Options:\n"                                                 \
+  "-d, --depth  Max depth to search down the tree (default 5)\n"        \
+  "-f, --file   Get paths from file instead of traversing (use -- for " \
+  "stdin)\n"                                                            \
+  "-M, --mount  Don't cross device boundaries\n"                        \
+  "\n"                                                                  \
+  "Filter Options:\n"                                                   \
+  "-t, --types  Types of entities considered when searching,\n"         \
+  "             represented by by string of letters\n"                  \
+  "             (a-all, d-dir, f-file, l-link, D-link to dir, F-link "  \
+  "to file)\n"                                                          \
+  "             (default dfl)\n"                                        \
+  "\n"                                                                  \
+  "Print Options:\n"                                                    \
+  "-i, --interactive  Possible options: always, auto, never (default "  \
+  "auto)\n"                                                             \
+  "-m, --matches      Number of matches to print (default 9)\n"         \
+  "-r, --reverse      Reverse display order\n"
 
 typedef enum {
   TYPE_FILTER_ALL = 1,
@@ -54,8 +57,9 @@ bool unlimited;
 interactive_t interactive;
 bool verbose;
 bool reverse;
-bool ignore_dotfiles;
-uint max_depth = 5;
+bool mount;
+uint depth = 5;
+const char *file = NULL;
 
 uint *ranges;
 struct stat sstat;
@@ -130,12 +134,12 @@ static uint add(const char *restrict str, const char *restrict const *expr,
 }
 
 PURE static bool de_type_matches(const struct dirent *de) {
-  return (type_filter & TYPE_FILTER_FILES && de->d_type == DT_REG) ||
+  return type_filter == TYPE_FILTER_ALL ||
+         (type_filter & TYPE_FILTER_FILES && de->d_type == DT_REG) ||
          (type_filter & TYPE_FILTER_DIRS && de->d_type == DT_DIR) ||
          (type_filter & (TYPE_FILTER_LINKS | TYPE_FILTER_DIR_LINKS |
                          TYPE_FILTER_FILE_LINKS) &&
-          de->d_type == DT_LNK) ||
-         type_filter == TYPE_FILTER_ALL;
+          de->d_type == DT_LNK);
 }
 
 CONST static bool de_useless(const struct dirent *de) {
@@ -145,18 +149,75 @@ CONST static bool de_useless(const struct dirent *de) {
          (de->d_type != DT_DIR && !de_type_matches(de));
 }
 
-static bool link_type_matches(const char *path) {
-  return !stat(path, &sstat) &&
-         ((type_filter & TYPE_FILTER_DIR_LINKS && S_ISDIR(sstat.st_mode)) ||
-          (type_filter & TYPE_FILTER_FILE_LINKS && S_ISREG(sstat.st_mode)));
+static int filter_add(const char *restrict path, const struct dirent *de,
+                      uint *ranges, const char *restrict const *expr, uint len,
+                      uint count) {
+  struct stat lstats;
+  uchar type = 0;
+  if(type_filter != TYPE_FILTER_ALL) {
+    if(!de || de->d_type == DT_UNKNOWN) {
+      lstat(path, &lstats);
+      type = S_ISDIR(lstats.st_mode)   ? DT_DIR
+             : S_ISREG(lstats.st_mode) ? DT_REG
+             : S_ISLNK(lstats.st_mode) ? DT_LNK
+                                       : DT_BLK;
+    } else {
+      type = de->d_type;
+    }
+  }
+  if(path[0] == '.' && path[1] == '/') path += 2;
+
+  if(type_filter == TYPE_FILTER_ALL ||
+     (type_filter & TYPE_FILTER_FILES && type == DT_REG) ||
+     (type_filter & TYPE_FILTER_DIRS && type == DT_DIR) ||
+     (type_filter & TYPE_FILTER_LINKS && type == DT_LNK)) {
+    if(matches(ranges, path, expr, len, count)) add(path, expr, count);
+  } else if(type == DT_LNK &&
+            type_filter & (TYPE_FILTER_DIR_LINKS | TYPE_FILTER_FILE_LINKS)) {
+    if(matches(ranges, path, expr, len, count)) {
+      if(stat(path, &sstat)) {
+        if(verbose) fprintf(stderr, "Couldn't stat directory: %s\n", path);
+        return -1;
+      }
+      if((type_filter & TYPE_FILTER_DIR_LINKS && S_ISDIR(sstat.st_mode)) ||
+         (type_filter & TYPE_FILTER_FILE_LINKS && S_ISREG(sstat.st_mode))) {
+        add(path, expr, count);
+      }
+      return 1;
+    }
+  }
+  return 0;
+}
+
+static void file_paths(const char *const *expr, uint len, uint count) {
+  FILE *f;
+  size_t line_size = 512;
+  char *line = malloc(line_size);
+  ssize_t line_len;
+  if(!strcmp("-", file)) {
+    f = stdin;
+  } else {
+    f = fopen(file, "r");
+  }
+  while((line_len = getline(&line, &line_size, f)) > 0) {
+    for(uint i = 0; i < line_len && i < line_size - 1; i++) {
+      if(line[i] == '\n') {
+        line[i] = 0;
+        filter_add(line, NULL, ranges, expr, len, count);
+      }
+    }
+  }
 }
 
 static void dfs_paths(const char *const *expr, uint len, uint count) {
   char path[512] = ".";
   struct dirent *de;
+  dev_t id = 0;
+  int ret;
   uint *null_stack;
+  bool stated;
   uint new_null = 1;
-  DIR **dr_stack = malloc(max_depth * sizeof(DIR *));
+  DIR **dr_stack = malloc(depth * sizeof(DIR *));
   uint stack_i = 0;
   dr_stack[0] = opendir(path);
   if(!dr_stack[0]) {
@@ -164,10 +225,18 @@ static void dfs_paths(const char *const *expr, uint len, uint count) {
     free(dr_stack);
     return;
   }
-  null_stack = malloc(max_depth * sizeof(uint));
+  if(mount) {
+    if(stat(path, &sstat)) {
+      if(verbose) fprintf(stderr, "Couldn't stat directory: %s\n", path);
+      return;
+    }
+    id = sstat.st_dev;
+  }
+  null_stack = malloc(depth * sizeof(uint));
 
   null_stack[0] = 1;
   while(1) {
+    stated = false;
     de = readdir(dr_stack[stack_i]);
     if(!de) {
       closedir(dr_stack[stack_i]);
@@ -180,145 +249,145 @@ static void dfs_paths(const char *const *expr, uint len, uint count) {
     path[null_stack[stack_i]] = '/';
     new_null = stpcpy(path + null_stack[stack_i] + 1, de->d_name) - path;
 
-    if((de->d_name[0] != '.' || !ignore_dotfiles) && de_type_matches(de)) {
-      if(de->d_type == DT_LNK && !(type_filter & TYPE_FILTER_LINKS)) {
-        if(matches(ranges, path + 2, expr, len, count) &&
-           link_type_matches(path)) {
-          add(path + 2, expr, count);
-        }
-      } else if(matches(ranges, path + 2, expr, len, count)) {
-        add(path + 2, expr, count);
-      }
-    }
+    ret = filter_add(path, de, ranges, expr, len, count);
+    if(ret == -1) continue;
+    if(ret == 1) stated = true;
 
-    if(de->d_type == DT_DIR && stack_i + 1 < max_depth) {
-      stack_i++;
-      dr_stack[stack_i] = opendir(path);
-      if(!dr_stack[stack_i]) {
-        stack_i--;
-      } else {
-        null_stack[stack_i] = new_null;
+    if(de->d_type == DT_DIR && stack_i + 1 < depth) {
+      if(mount && !stated && stat(path, &sstat)) {
+        if(verbose) fprintf(stderr, "Couldn't stat directory: %s\n", path);
+        continue;
+      }
+      if(!mount || sstat.st_dev == id) {
+        stack_i++;
+        dr_stack[stack_i] = opendir(path);
+        if(!dr_stack[stack_i]) {
+          stack_i--;
+        } else {
+          null_stack[stack_i] = new_null;
+        }
       }
     }
   }
-
   free(dr_stack);
   free(null_stack);
 }
 
-int main(int argc, const char *const argv[]) {
-  uint nc;
-  uint n;
-  long long t;
-  uint off = 1;
-  if(argc < 2) goto error;
-  for(; off < (uint)argc; off++) {
-    if(argv[off][0] != '-') break;
-    if(CMP_OPTION(argv[off], "h", "help")) {
-      fputs(HELP_MSG "\n", stderr);
-      goto cleanup;
-    } else if(CMP_OPTION(argv[off], "m", "max-matches")) {
-      if(off + 1 >= (uint)argc || !sscanf(argv[off + 1], "%lld", &t)) {
-        goto error;
-      }
-      if(t < 1) {
-        unlimited = true;
-      } else {
-        arr.capacity = (uint)t;
-      }
-      off++;
-    } else if(CMP_OPTION(argv[off], "v", "verbose")) {
-      verbose = true;
-    } else if(CMP_OPTION(argv[off], "I", "ignore-dotfiles")) {
-      ignore_dotfiles = true;
-    } else if(CMP_OPTION(argv[off], "M", "max-depth")) {
-      if(off + 1 >= (uint)argc || !sscanf(argv[off + 1], "%lld", &t) || t < 0) {
-        goto error;
-      }
-      max_depth = t;
-      off++;
-    } else if(!strcmp(argv[off], "-i") || !strcmp(argv[off], "--interactive")) {
-      if(off + 1 >= (uint)argc) goto error;
-      off++;
-      if(!strcmp(argv[off], "always")) {
-        interactive = INTERACTIVE_ALWAYS;
-      } else if(!strcmp(argv[off], "auto")) {
-        interactive = INTERACTIVE_AUTO;
-      } else if(!strcmp(argv[off], "never")) {
-        interactive = INTERACTIVE_NEVER;
-      } else {
-        goto error;
-      }
-    } else if(!strcmp(argv[off], "-r") || !strcmp(argv[off], "--reverse")) {
-      reverse = true;
-    } else if(CMP_OPTION(argv[off], "t", "types")) {
-      if(off + 1 >= (uint)argc) goto error;
-      off++;
-      type_filter = 0;
-      for(uint i = 0; argv[off][i] != 0; i++) {
-        switch(argv[off][i]) {
-        case 'f':
-          type_filter |= TYPE_FILTER_FILES;
-          break;
-        case 'd':
-          type_filter |= TYPE_FILTER_DIRS;
-          break;
-        case 'l':
-          type_filter |= TYPE_FILTER_LINKS;
-          break;
-        case 'F':
-          type_filter |= TYPE_FILTER_FILE_LINKS;
-          break;
-        case 'D':
-          type_filter |= TYPE_FILTER_DIR_LINKS;
-          break;
-        case 'a':
-          type_filter |= TYPE_FILTER_ALL;
-          break;
-        default:
-          goto error;
-          break;
-        }
-      }
-    } else if(CMP_OPTION(argv[off], "f", "files-only")) {
-      type_filter = TYPE_FILTER_FILES;
-    } else if(CMP_OPTION(argv[off], "d", "dirs-only")) {
-      type_filter = TYPE_FILTER_DIRS;
-    } else if(CMP_OPTION(argv[off], "dl", "dirs-with-links")) {
-      type_filter = TYPE_FILTER_DIRS | TYPE_FILTER_LINKS;
-    } else if(CMP_OPTION(argv[off], "fl", "files-with-links")) {
-      type_filter = TYPE_FILTER_FILES | TYPE_FILTER_LINKS;
-    } else {
-      goto error;
+static void exit_clean(void) {
+  cleanup();
+  exit(0);
+}
+
+static void exit_error(void) {
+  fputs(HELP_MSG "\n", stderr);
+  cleanup();
+  exit(1);
+}
+
+static void opts_matches(long long n) {
+  unlimited = n < 1;
+  arr.capacity = (n < 1) ? 0 : (uint)n;
+}
+
+static void opts_depth(long long n) {
+  if(n < 0) exit_error();
+  depth = n;
+}
+
+static void opts_interactive(const char *str) {
+  if(!strcmp(str, "always")) {
+    interactive = INTERACTIVE_ALWAYS;
+  } else if(!strcmp(str, "auto")) {
+    interactive = INTERACTIVE_AUTO;
+  } else if(!strcmp(str, "never")) {
+    interactive = INTERACTIVE_NEVER;
+  } else {
+    exit_error();
+  }
+}
+
+static void opts_types(const char *str) {
+  type_filter = 0;
+  for(uint i = 0; str[i] != 0; i++) {
+    switch(str[i]) {
+    case 'f':
+      type_filter |= TYPE_FILTER_FILES;
+      break;
+    case 'd':
+      type_filter |= TYPE_FILTER_DIRS;
+      break;
+    case 'l':
+      type_filter |= TYPE_FILTER_LINKS;
+      break;
+    case 'F':
+      type_filter |= TYPE_FILTER_FILE_LINKS;
+      break;
+    case 'D':
+      type_filter |= TYPE_FILTER_DIR_LINKS;
+      break;
+    case 'a':
+      type_filter |= TYPE_FILTER_ALL;
+      break;
+    default:
+      exit_error();
+      break;
     }
   }
-  if(off >= (uint)argc) {
-    goto error;
+}
+
+static void opts_file(const char *str) { file = str; }
+
+static uint opts(int argc, const char *const argv[]) {
+#define CMP_OPTION(buff, short, long) \
+  (!strcmp(buff + 1, short) || !strcmp(buff + 1, "-" long))
+#define OPTS_FLAG(short, long, flag)            \
+  else if(CMP_OPTION(argv[off], short, long)) { \
+    flag = true;                                \
   }
-  nc = node_count(argv + off, argc - off);
-
-  ranges = malloc(nc * 2 * sizeof(uint));
-  if(!unlimited) resa_alloc(&arr);
-#ifdef NDEBUG
-  stats_alloc(&st, nc);
-#endif
-
-  dfs_paths(argv + off, argc - off, nc);
-
-#ifdef NDEBUG
-  stats_free(&st);
-#endif
-
-#ifndef NDEBUG
-  if(unlimited) {
-    resl_print(&list, nc);
-  } else {
-    resa_print(&arr, nc);
+#define OPTS_NUM(short, long, fun)                                  \
+  else if(CMP_OPTION(argv[off], short, long)) {                     \
+    if(off + 1 >= (uint)argc || !sscanf(argv[off + 1], "%lld", &t)) \
+      exit_error();                                                 \
+    off++;                                                          \
+    fun(t);                                                         \
   }
-  puts("");
-#endif
+#define OPTS_STRING(short, long, fun)           \
+  else if(CMP_OPTION(argv[off], short, long)) { \
+    if(off + 1 >= (uint)argc) exit_error();     \
+    off++;                                      \
+    fun(argv[off]);                             \
+  }
+  uint off = 1;
+  long long t;
+  if(argc < 2) exit_error();
+  for(; off < (uint)argc; off++) {
+    if(argv[off][0] != '-') return off;
+    if(CMP_OPTION(argv[off], "h", "help")) {
+      puts(HELP_MSG);
+      exit_clean();
+    }
+    OPTS_FLAG("v", "verbose", verbose)
+    OPTS_FLAG("r", "reverse", reverse)
+    OPTS_FLAG("M", "mount", mount)
+    OPTS_NUM("m", "matches", opts_matches)
+    OPTS_NUM("d", "depth", opts_depth)
+    OPTS_STRING("i", "interactive", opts_interactive)
+    OPTS_STRING("t", "types", opts_types)
+    OPTS_STRING("f", "file", opts_file)
+    else {
+      exit_error();
+    }
+  }
+  return off;
+#undef OPTS_FLAG
+#undef OPTS_NUM
+#undef OPTS_STRING
+#undef CMP_OPTION
+}
 
-  if((unlimited && !list.tail) || (!unlimited && !arr.size)) goto cleanup;
+static void print(void) {
+  uint n;
+  if((unlimited && !list.tail) || (!unlimited && !arr.size)) exit_clean();
 
   if(interactive == INTERACTIVE_ALWAYS ||
      (interactive == INTERACTIVE_AUTO &&
@@ -338,7 +407,7 @@ int main(int argc, const char *const argv[]) {
       }
     }
     fputs("Choice: ", stderr);
-    if(!scanf("%u", &n)) goto error;
+    if(!scanf("%u", &n)) exit_error();
     if(unlimited) {
       resl_i_path_print(&list, n);
     } else {
@@ -359,13 +428,40 @@ int main(int argc, const char *const argv[]) {
       }
     }
   }
+}
 
-cleanup:
-  cleanup();
-  return 0;
+int main(int argc, const char *const argv[]) {
+  uint nc;
+  uint off = opts(argc, argv);
+  if(off >= (uint)argc) exit_error();
+  nc = node_count(argv + off, argc - off);
 
-error:
-  fputs(HELP_MSG "\n", stderr);
-  cleanup();
-  return 1;
+  ranges = malloc(nc * 2 * sizeof(uint));
+  if(!unlimited) resa_alloc(&arr);
+#ifdef NDEBUG
+  stats_alloc(&st, nc);
+#endif
+
+  if(file) {
+    file_paths(argv + off, argc - off, nc);
+  } else {
+    dfs_paths(argv + off, argc - off, nc);
+  }
+
+#ifdef NDEBUG
+  stats_free(&st);
+#endif
+
+#ifndef NDEBUG
+  if(unlimited) {
+    resl_print(&list, nc);
+  } else {
+    resa_print(&arr, nc);
+  }
+  puts("");
+#endif
+
+  print();
+
+  exit_clean();
 }
