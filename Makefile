@@ -43,7 +43,7 @@ release: CFLAGS += $(RELEASE)
 release: binaries
 
 debug: CFLAGS += $(DEBUG)
-debug: tests binaries
+debug: check binaries
 
 dis: CFLAGS += $(DISASSEMBLY)
 dis: binaries objdump

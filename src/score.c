@@ -1,71 +1,67 @@
 #include "score.h"
 #include <stdio.h>
 
-CONST uint score(const stats_t *stats, uint count) {
-  uint depth = (stats->depth - count) * SCORE_DEPTH;
-  uint dirname =
-    (stats->dirname_start[0] +
-       (stats->dirname_start[0] == 0 || !stats->dotfile[count - 1]) <=
-     stats->dirname_end[0] + 1)
-      ? ((stats->dirname_start[0] +
-          (stats->dirname_start[0] == 0 || !stats->dotfile[count - 1])) *
-         SCORE_DIRNAME_START)
-      : ((stats->dirname_end[0] + 1) * SCORE_DIRNAME_END);
-  uint word = (stats->word_start[0] <= stats->word_end[0])
-                ? ((stats->word_start[0] + 1) * SCORE_DIRNAME_START)
-                : ((stats->word_end[0] + 1) * SCORE_DIRNAME_END);
-  uint length =
-    (stats->dirname_start[0] + stats->dirname_end[0]) * SCORE_LENGTH;
-  uint dotfile = stats->dotfile[0] * SCORE_DOTFILE;
-  uint bad_case =
+PURE static uint score_depth(const stats_t *stats, uint count) {
+  return (stats->depth - count) * SCORE_DEPTH;
+}
 
-    stats->up_case[0] * SCORE_UP_CASE + stats->low_case[0] * SCORE_LOW_CASE;
+PURE static uint score_dirname(const stats_t *const stats, const uint i) {
+  const uint dirname_start_raw = stats->dirname_start[i];
+  const uint dirname_start =
+    dirname_start_raw - (dirname_start_raw > 0 && stats->dotfile[i]);
+  const uint dirname_end = stats->dirname_end[i];
+  return (dirname_start <= dirname_end) ? (dirname_start * SCORE_DIRNAME_START)
+                                        : (dirname_end * SCORE_DIRNAME_END);
+}
+
+PURE static uint score_word(const stats_t *const stats, const uint i) {
+  const uint word_start = stats->word_start[i];
+  const uint word_end = stats->word_end[i];
+  return (word_start <= word_end) ? (word_start * SCORE_WORD_START)
+                                  : (word_end * SCORE_WORD_END);
+}
+
+PURE static uint score_length(const stats_t *const stats, const uint i) {
+  return (stats->dirname_start[i] + stats->dirname_end[i]) * SCORE_LENGTH;
+}
+
+PURE static uint score_case(const stats_t *const stats, const uint i) {
+  return stats->up_case[i] * SCORE_UP_CASE +
+         stats->low_case[i] * SCORE_LOW_CASE;
+}
+
+PURE static uint score_dotfile(const stats_t *const stats, const uint i) {
+  return stats->dotfile[i] * SCORE_DOTFILE;
+}
+
+PURE uint score(const stats_t *const stats, const uint count) {
+  uint dirname = score_dirname(stats, 0);
+  uint word = score_word(stats, 0);
+  uint length = score_length(stats, 0);
+  uint wrong_case = score_case(stats, 0);
+  uint dotfile = score_dotfile(stats, 0);
+
   if(count > 1) {
     dirname /= SCORE_LOSS * (count - 1);
     word /= SCORE_LOSS * (count - 1);
     length /= SCORE_LOSS * (count - 1);
-    bad_case /= SCORE_LOSS * (count - 1);
+    wrong_case /= SCORE_LOSS * (count - 1);
+    dotfile /= SCORE_LOSS * (count - 1);
 
-    dirname +=
-      (stats->dirname_start[count - 1] +
-         (stats->dirname_start[0] == 0 || !stats->dotfile[count - 1]) <=
-       stats->dirname_end[count - 1] + 1)
-        ? ((stats->dirname_start[count - 1] +
-            (stats->dirname_start[0] == 0 || !stats->dotfile[count - 1])) *
-           SCORE_DIRNAME_START)
-        : ((stats->dirname_end[count - 1] + 1) * SCORE_DIRNAME_END);
-    word += (stats->word_start[count - 1] <= stats->word_end[count - 1])
-              ? ((stats->word_start[count - 1] + 1) * SCORE_DIRNAME_START)
-              : ((stats->word_end[count - 1] + 1) * SCORE_DIRNAME_END);
-    length +=
-      (stats->dirname_start[count - 1] + stats->dirname_end[count - 1]) *
-      SCORE_LENGTH;
-    bad_case += stats->up_case[count - 1] * SCORE_UP_CASE +
-                stats->low_case[count - 1] * SCORE_LOW_CASE;
-    dotfile += stats->dotfile[count - 1] * SCORE_DOTFILE;
+    dirname += score_dirname(stats, count - 1);
+    word += score_word(stats, count - 1);
+    length += score_length(stats, count - 1);
+    wrong_case += score_case(stats, count - 1);
+    dotfile += score_case(stats, count - 1);
 
-    for(size_t i = count - 2; i > 0; i--) {
-      dirname +=
-        ((stats->dirname_start[i] +
-            (stats->dirname_start[0] == 0 || !stats->dotfile[count - 1]) <=
-          stats->dirname_end[i] + 1)
-           ? ((stats->dirname_start[i] +
-               (stats->dirname_start[0] == 0 || !stats->dotfile[count - 1])) *
-              SCORE_DIRNAME_START)
-           : ((stats->dirname_end[i] + 1) * SCORE_DIRNAME_END)) /
-        (SCORE_LOSS * (count - 1 - i));
-      word += ((stats->word_start[i] <= stats->word_end[i])
-                 ? ((stats->word_start[i] + 1) * SCORE_DIRNAME_START)
-                 : ((stats->word_end[i] + 1) * SCORE_DIRNAME_END)) /
-              (SCORE_LOSS * (count - 1 - i));
-      bad_case += (stats->up_case[i] * SCORE_UP_CASE +
-                   stats->low_case[i] * SCORE_LOW_CASE) /
-                  (SCORE_LOSS * (count - 1 - i));
-      length +=
-        ((stats->dirname_start[i] + stats->dirname_end[i]) * SCORE_LENGTH) /
-        (SCORE_LOSS * (count - 1 - i));
-      dotfile += stats->dotfile[i] * SCORE_DOTFILE;
+    for(uint i = 1, j = count - 2; i < count - 1; i++, j--) {
+      dirname += score_dirname(stats, i) / (SCORE_LOSS * j);
+      word += score_word(stats, i) / (SCORE_LOSS * j);
+      length += score_length(stats, i) / (SCORE_LOSS * j);
+      wrong_case += score_case(stats, i) / (SCORE_LOSS * j);
+      dotfile += score_dotfile(stats, i) / (SCORE_LOSS * j);
     }
   }
-  return SCORE_BASE - depth - dirname - word - bad_case - length - dotfile;
+  return SCORE_BASE - score_depth(stats, count) - dirname - word - wrong_case -
+         length - dotfile;
 }

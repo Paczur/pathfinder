@@ -1,6 +1,6 @@
 ## Pathfinder
 Program that filters and scores paths based on expression provided by user.
-Built to try out TDD. Primarly designed for combining with cd for quick system naviagtion.
+Primarly designed for combining with cd for quick system naviagtion.
 
 ### Usage
 ```
