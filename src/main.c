@@ -24,6 +24,7 @@
   "-f, --file   Get paths from file instead of traversing (use \"-\" for " \
   "stdin)\n"                                                               \
   "-M, --mount  Don't cross device boundaries\n"                           \
+  "-D, --dir    Start traversing from specified dir (default \".\")\n"     \
   "\n"                                                                     \
   "Filter Options:\n"                                                      \
   "-t, --types  Types of entities considered when searching,\n"            \
@@ -48,11 +49,14 @@
 #define OPTS_STR                          \
   X('i', "interactive", opts_interactive) \
   X('t', "types", opts_types)             \
-  X('f', "file", opts_file)
+  X('f', "file", opts_file)               \
+  X('D', "dir", opts_dir)
 
 #define OPTS_NUM                  \
   X('m', "matches", opts_matches) \
   X('d', "depth", opts_depth)
+
+#define DIR_SIZE 512
 
 typedef enum {
   TYPE_FILTER_ALL = 1,
@@ -69,13 +73,6 @@ typedef enum {
   INTERACTIVE_NEVER,
 } interactive_t;
 
-typedef enum {
-  TYPE_FLAG,
-  TYPE_VOID,
-  TYPE_STR,
-  TYPE_NUM,
-} opt_type;
-
 TYPE_FILTER type_filter =
   TYPE_FILTER_DIRS | TYPE_FILTER_FILES | TYPE_FILTER_LINKS;
 bool unlimited;
@@ -85,6 +82,7 @@ bool reverse;
 bool mount;
 uint depth = 5;
 const char *file = NULL;
+char dir[DIR_SIZE] = ".";
 
 uint *ranges;
 struct stat sstat;
@@ -190,7 +188,6 @@ static int filter_add(const char *restrict path, const struct dirent *de,
       type = de->d_type;
     }
   }
-  if(path[0] == '.' && path[1] == '/') path += 2;
 
   if(type_filter == TYPE_FILTER_ALL ||
      (type_filter & TYPE_FILTER_FILES && type == DT_REG) ||
@@ -235,7 +232,6 @@ static void file_paths(const char *const *expr, uint len, uint count) {
 }
 
 static void dfs_paths(const char *const *expr, uint len, uint count) {
-  char path[512] = ".";
   struct dirent *de;
   dev_t id = 0;
   int ret;
@@ -244,22 +240,23 @@ static void dfs_paths(const char *const *expr, uint len, uint count) {
   uint new_null = 1;
   DIR **dr_stack = malloc(depth * sizeof(DIR *));
   uint stack_i = 0;
-  dr_stack[0] = opendir(path);
+  dr_stack[0] = opendir(dir);
   if(!dr_stack[0]) {
-    if(verbose) fprintf(stderr, "Couldn't open directory: %s\n", path);
+    if(verbose) fprintf(stderr, "Couldn't open directory: %s\n", dir);
     free(dr_stack);
     return;
   }
   if(mount) {
-    if(stat(path, &sstat)) {
-      if(verbose) fprintf(stderr, "Couldn't stat directory: %s\n", path);
+    if(stat(dir, &sstat)) {
+      if(verbose) fprintf(stderr, "Couldn't stat directory: %s\n", dir);
       return;
     }
     id = sstat.st_dev;
   }
   null_stack = malloc(depth * sizeof(uint));
+  if(dir[0] == '.' && !dir[1]) dir[0] = 0;
 
-  null_stack[0] = 1;
+  null_stack[0] = strnlen(dir, DIR_SIZE);
   while(1) {
     stated = false;
     de = readdir(dr_stack[stack_i]);
@@ -271,21 +268,25 @@ static void dfs_paths(const char *const *expr, uint len, uint count) {
     }
     if(de_useless(de)) continue;
 
-    path[null_stack[stack_i]] = '/';
-    new_null = stpcpy(path + null_stack[stack_i] + 1, de->d_name) - path;
+    if(null_stack[stack_i] > 0 && dir[null_stack[stack_i] - 1] != '/') {
+      dir[null_stack[stack_i]] = '/';
+      new_null = stpcpy(dir + null_stack[stack_i] + 1, de->d_name) - dir;
+    } else {
+      new_null = stpcpy(dir + null_stack[stack_i], de->d_name) - dir;
+    }
 
-    ret = filter_add(path, de, ranges, expr, len, count);
+    ret = filter_add(dir, de, ranges, expr, len, count);
     if(ret == -1) continue;
     if(ret == 1) stated = true;
 
     if(de->d_type == DT_DIR && stack_i + 1 < depth) {
-      if(mount && !stated && stat(path, &sstat)) {
-        if(verbose) fprintf(stderr, "Couldn't stat directory: %s\n", path);
+      if(mount && !stated && stat(dir, &sstat)) {
+        if(verbose) fprintf(stderr, "Couldn't stat directory: %s\n", dir);
         continue;
       }
       if(!mount || sstat.st_dev == id) {
         stack_i++;
-        dr_stack[stack_i] = opendir(path);
+        dr_stack[stack_i] = opendir(dir);
         if(!dr_stack[stack_i]) {
           stack_i--;
         } else {
@@ -366,6 +367,8 @@ static void opts_types(const char *str) {
 }
 
 static void opts_file(const char *str) { file = str; }
+
+static void opts_dir(const char *str) { strncpy(dir, str, DIR_SIZE); }
 
 static bool opts_short(const char *opts, const char *val) {
   long long n;

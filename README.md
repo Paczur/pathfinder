@@ -15,6 +15,7 @@ Primarly designed for combining with cd for quick system naviagtion.
   -d, --depth        Max depth to search down the tree (default 5)
   -f, --file         Get paths from file instead of traversing (use "-" for stdin)
   -M, --mount        Don't cross device boundaries
+  -D, --dir          Start traversing from specified dir (default ".")
 
   Filter Options:
   -t, --types        Types of entities considered when searching,
