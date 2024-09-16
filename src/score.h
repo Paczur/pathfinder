@@ -15,6 +15,7 @@
 #define SCORE_WORD_START 30
 #define SCORE_UP_CASE 20
 #define SCORE_LENGTH 5
+#define SCORE_PATH_LEN 1
 
 #define SCORE_LOSS 2
 

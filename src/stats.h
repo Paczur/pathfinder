@@ -5,6 +5,7 @@
 
 typedef struct stats_t {
   uint depth;
+  uint path_len;
   uint *dirname_start;
   uint *dirname_end;
   uint *word_start;

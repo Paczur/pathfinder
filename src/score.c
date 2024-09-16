@@ -5,6 +5,10 @@ PURE static uint score_depth(const stats_t *stats, uint count) {
   return (stats->depth - count) * SCORE_DEPTH;
 }
 
+PURE static uint score_path_len(const stats_t *stats) {
+  return stats->path_len * SCORE_PATH_LEN;
+}
+
 PURE static uint score_dirname(const stats_t *const stats, const uint i) {
   const uint dirname_start_raw = stats->dirname_start[i];
   const uint dirname_start =
@@ -62,6 +66,6 @@ PURE uint score(const stats_t *const stats, const uint count) {
       dotfile += score_dotfile(stats, i) / (SCORE_LOSS * j);
     }
   }
-  return SCORE_BASE - score_depth(stats, count) - dirname - word - wrong_case -
-         length - dotfile;
+  return SCORE_BASE - score_depth(stats, count) - score_path_len(stats) -
+         dirname - word - wrong_case - length - dotfile;
 }

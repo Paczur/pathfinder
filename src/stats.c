@@ -4,13 +4,21 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-static uint depth(const char *str) {
+PURE static uint depth(const char *str) {
   assert(str);
   assert(str[0]);
   uint counter = 1;
   if(!str[1]) return str[0] != '/';
   for(size_t i = 1; str[i + 1]; i++) {
     if(str[i] == '/') counter++;
+  }
+  return counter;
+}
+
+PURE static uint path_len(const char *str) {
+  uint counter = 0;
+  for(uint i = 0; str[i]; i++) {
+    if(str[i] != '/') counter++;
   }
   return counter;
 }
@@ -245,6 +253,7 @@ void stats(stats_t *stats, uint *ranges, uint rangesl,
   assert(stats->dotfile);
 
   stats->depth = depth(str);
+  stats->path_len = path_len(str);
 
   dirname_start_distance(ranges, rangesl, stats->dirname_start, str);
   dirname_end_distance(ranges, rangesl, stats->dirname_end, str);
