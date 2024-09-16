@@ -9,32 +9,50 @@
 #include <sys/stat.h>
 #include <sys/resource.h>
 
-#define HELP_MSG                                                        \
-  "pf [OPTION] ... EXPR ...\n"                                          \
-  "Find path(s) best matching EXPR using substring matches.\n"          \
-  "\n"                                                                  \
-  "General options:\n"                                                  \
-  "-h, --help     Show help\n"                                          \
-  "-v, --verbose  Print errors to stderr\n"                             \
-  "\n"                                                                  \
-  "Traverse Options:\n"                                                 \
-  "-d, --depth  Max depth to search down the tree (default 5)\n"        \
-  "-f, --file   Get paths from file instead of traversing (use -- for " \
-  "stdin)\n"                                                            \
-  "-M, --mount  Don't cross device boundaries\n"                        \
-  "\n"                                                                  \
-  "Filter Options:\n"                                                   \
-  "-t, --types  Types of entities considered when searching,\n"         \
-  "             represented by by string of letters\n"                  \
-  "             (a-all, d-dir, f-file, l-link, D-link to dir, F-link "  \
-  "to file)\n"                                                          \
-  "             (default dfl)\n"                                        \
-  "\n"                                                                  \
-  "Print Options:\n"                                                    \
-  "-i, --interactive  Possible options: always, auto, never (default "  \
-  "auto)\n"                                                             \
-  "-m, --matches      Number of matches to print (default 9)\n"         \
+#define HELP_MSG                                                           \
+  "pf [OPTION] ... EXPR ...\n"                                             \
+  "Find path(s) best matching EXPR using substring matches.\n"             \
+  "\n"                                                                     \
+  "General options:\n"                                                     \
+  "-h, --help     Show help\n"                                             \
+  "-v, --verbose  Print errors to stderr\n"                                \
+  "-,  --         Mark end of arguments, useful for providing EXPR "       \
+  "starting with \"-\"\n"                                                  \
+  "\n"                                                                     \
+  "Traverse Options:\n"                                                    \
+  "-d, --depth  Max depth to search down the tree (default 5)\n"           \
+  "-f, --file   Get paths from file instead of traversing (use \"-\" for " \
+  "stdin)\n"                                                               \
+  "-M, --mount  Don't cross device boundaries\n"                           \
+  "\n"                                                                     \
+  "Filter Options:\n"                                                      \
+  "-t, --types  Types of entities considered when searching,\n"            \
+  "             represented by by string of letters\n"                     \
+  "             (a-all, d-dir, f-file, l-link, D-link to dir, F-link "     \
+  "to file)\n"                                                             \
+  "             (default dfl)\n"                                           \
+  "\n"                                                                     \
+  "Print Options:\n"                                                       \
+  "-i, --interactive  Possible options: always, auto, never (default "     \
+  "auto)\n"                                                                \
+  "-m, --matches      Number of matches to print (default 9)\n"            \
   "-r, --reverse      Reverse display order\n"
+
+#define OPTS_FLAG            \
+  X('v', "verbose", verbose) \
+  X('r', "reverse", reverse) \
+  X('M', "mount", mount)
+
+#define OPTS_VOID X('h', "help", opts_help)
+
+#define OPTS_STR                          \
+  X('i', "interactive", opts_interactive) \
+  X('t', "types", opts_types)             \
+  X('f', "file", opts_file)
+
+#define OPTS_NUM                  \
+  X('m', "matches", opts_matches) \
+  X('d', "depth", opts_depth)
 
 typedef enum {
   TYPE_FILTER_ALL = 1,
@@ -50,6 +68,13 @@ typedef enum {
   INTERACTIVE_ALWAYS,
   INTERACTIVE_NEVER,
 } interactive_t;
+
+typedef enum {
+  TYPE_FLAG,
+  TYPE_VOID,
+  TYPE_STR,
+  TYPE_NUM,
+} opt_type;
 
 TYPE_FILTER type_filter =
   TYPE_FILTER_DIRS | TYPE_FILTER_FILES | TYPE_FILTER_LINKS;
@@ -284,6 +309,11 @@ static void exit_error(void) {
   exit(1);
 }
 
+static void opts_help(void) {
+  puts(HELP_MSG);
+  exit_clean();
+}
+
 static void opts_matches(long long n) {
   unlimited = n < 1;
   arr.capacity = (n < 1) ? 0 : (uint)n;
@@ -337,52 +367,99 @@ static void opts_types(const char *str) {
 
 static void opts_file(const char *str) { file = str; }
 
+static bool opts_short(const char *opts, const char *val) {
+  long long n;
+
+  for(const char *o = opts; *o; o++) {
+    switch(*o) {
+#define X(s, l, f) \
+  case s:          \
+    f = true;      \
+    break;
+      OPTS_FLAG
+#undef X
+#define X(s, l, f) \
+  case s:          \
+    f();           \
+    break;
+      OPTS_VOID
+#undef X
+#define X(s, l, f)                          \
+  case s:                                   \
+    if(*(o + 1) != 0 || !val) exit_error(); \
+    f(val);                                 \
+    return true;                            \
+    break;
+      OPTS_STR
+#undef X
+#define X(s, l, f)                                                      \
+  case s:                                                               \
+    if(*(o + 1) != 0 || !val || !sscanf(val, "%lld", &n)) exit_error(); \
+    f(n);                                                               \
+    return true;                                                        \
+    break;
+      OPTS_NUM
+#undef X
+    default:
+      exit_error();
+      break;
+    }
+  }
+  return false;
+}
+
+static bool opts_long(const char *opts, const char *val) {
+  long long n;
+  if(0) {
+  }
+#define X(s, l, f)            \
+  else if(!strcmp(opts, l)) { \
+    f = true;                 \
+  }
+  OPTS_FLAG
+#undef X
+#define X(s, l, f)            \
+  else if(!strcmp(opts, l)) { \
+    f();                      \
+  }
+  OPTS_VOID
+#undef X
+#define X(s, l, f)            \
+  else if(!strcmp(opts, l)) { \
+    if(!val) exit_error();    \
+    f(val);                   \
+    return true;              \
+  }
+  OPTS_STR
+#undef X
+#define X(s, l, f)                                     \
+  else if(!strcmp(opts, l)) {                          \
+    if(!val || !sscanf(val, "%lld", &n)) exit_error(); \
+    f(n);                                              \
+    return true;                                       \
+  }
+  OPTS_NUM
+#undef X
+  else exit_error();
+  return false;
+}
+
 static uint opts(int argc, const char *const argv[]) {
-#define CMP_OPTION(buff, short, long) \
-  (!strcmp(buff + 1, short) || !strcmp(buff + 1, "-" long))
-#define OPTS_FLAG(short, long, flag)            \
-  else if(CMP_OPTION(argv[off], short, long)) { \
-    flag = true;                                \
-  }
-#define OPTS_NUM(short, long, fun)                                  \
-  else if(CMP_OPTION(argv[off], short, long)) {                     \
-    if(off + 1 >= (uint)argc || !sscanf(argv[off + 1], "%lld", &t)) \
-      exit_error();                                                 \
-    off++;                                                          \
-    fun(t);                                                         \
-  }
-#define OPTS_STRING(short, long, fun)           \
-  else if(CMP_OPTION(argv[off], short, long)) { \
-    if(off + 1 >= (uint)argc) exit_error();     \
-    off++;                                      \
-    fun(argv[off]);                             \
-  }
   uint off = 1;
-  long long t;
+  const char *v;
   if(argc < 2) exit_error();
   for(; off < (uint)argc; off++) {
     if(argv[off][0] != '-') return off;
-    if(CMP_OPTION(argv[off], "h", "help")) {
-      puts(HELP_MSG);
-      exit_clean();
-    }
-    OPTS_FLAG("v", "verbose", verbose)
-    OPTS_FLAG("r", "reverse", reverse)
-    OPTS_FLAG("M", "mount", mount)
-    OPTS_NUM("m", "matches", opts_matches)
-    OPTS_NUM("d", "depth", opts_depth)
-    OPTS_STRING("i", "interactive", opts_interactive)
-    OPTS_STRING("t", "types", opts_types)
-    OPTS_STRING("f", "file", opts_file)
-    else {
-      exit_error();
+    v = (off + 1 < (uint)argc) ? argv[off + 1] : NULL;
+    if(argv[off][1] == '-') {
+      if(!argv[off][2]) return off + 1;
+      off += opts_long(argv[off] + 2, v);
+    } else {
+      if(!argv[off][1]) return off + 1;
+      off += opts_short(argv[off] + 1, v);
     }
   }
   return off;
-#undef OPTS_FLAG
-#undef OPTS_NUM
-#undef OPTS_STRING
-#undef CMP_OPTION
 }
 
 static void print(void) {

@@ -9,6 +9,7 @@ Primarly designed for combining with cd for quick system naviagtion.
   General options:
   -h, --help            Show help
   -v, --verbose         Print errors to stderr
+  -,  --                Mark end of arguments, useful for providing EXPR starting with "-"
 
   Traverse Options:
   -d, --depth        Max depth to search down the tree (default 5)
