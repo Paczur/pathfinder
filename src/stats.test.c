@@ -155,14 +155,14 @@ TEST(word_end_distance, Z) {
 TEST(up_case_count, long) {
   uint ranges[] = {1, 4};
   uint ret;
-  char *expr[] = {"res"};
+  const char *expr[] = {"res"};
   up_case_count(ranges, 2, &ret, "pressed", expr);
   assert_int_equal(ret, 0);
 }
 TEST(up_case_count, single) {
   uint ranges[] = {0, 1};
   uint ret;
-  char *expr[] = {"t"};
+  const char *expr[] = {"t"};
   up_case_count(ranges, 2, &ret, "test", expr);
   assert_int_equal(ret, 0);
 }
@@ -170,7 +170,7 @@ TEST(up_case_count, multiple) {
   uint ranges[] = {1, 3, 5, 6};
   uint ans[] = {0, 0};
   uint ret[2];
-  char *expr[] = {"es", "l"};
+  const char *expr[] = {"es", "l"};
   up_case_count(ranges, 4, ret, "test/lol", expr);
   assert_memory_equal(ret, ans, 2);
 }
@@ -178,7 +178,7 @@ TEST(up_case_count, half) {
   uint ranges[] = {0, 4, 5, 7};
   uint ans[] = {2, 1};
   uint ret[2];
-  char *expr[] = {"test", "lo"};
+  const char *expr[] = {"test", "lo"};
   up_case_count(ranges, 4, ret, "tEsT/Lol", expr);
   assert_memory_equal(ret, ans, 2);
 }
@@ -186,14 +186,14 @@ TEST(up_case_count, half) {
 TEST(low_case_count, long) {
   uint ranges[] = {1, 4};
   uint ret;
-  char *expr[] = {"res"};
+  const char *expr[] = {"res"};
   low_case_count(ranges, 2, &ret, "pressed", expr);
   assert_int_equal(ret, 0);
 }
 TEST(low_case_count, single) {
   uint ranges[] = {0, 1};
   uint ret;
-  char *expr[] = {"t"};
+  const char *expr[] = {"t"};
   low_case_count(ranges, 2, &ret, "test", expr);
   assert_int_equal(ret, 0);
 }
@@ -201,7 +201,7 @@ TEST(low_case_count, multiple) {
   uint ranges[] = {1, 3, 5, 6};
   uint ans[] = {0, 0};
   uint ret[2];
-  char *expr[] = {"es", "l"};
+  const char *expr[] = {"es", "l"};
   low_case_count(ranges, 4, ret, "test/lol", expr);
   assert_memory_equal(ret, ans, 2);
 }
@@ -209,12 +209,12 @@ TEST(low_case_count, half) {
   uint ranges[] = {0, 4, 5, 7};
   uint ans[] = {2, 1};
   uint ret[2];
-  char *expr[] = {"tEsT", "Lo"};
+  const char *expr[] = {"tEsT", "Lo"};
   low_case_count(ranges, 4, ret, "test/lol", expr);
   assert_memory_equal(ret, ans, 2);
 }
 
-void assert_stats_equal(const stats_t *x, const stats_t *y, uint count) {
+static void assert_stats_equal(const stats_t *x, const stats_t *y, uint count) {
   assert_non_null(x->dirname_start);
   assert_non_null(y->dirname_start);
   assert_non_null(x->dirname_end);
@@ -253,7 +253,7 @@ TEST(stats, single) {
                  .up_case = &(uint[]){0},
                  .low_case = &(uint[]){0},
                  .dotfile = &(bool[]){false}};
-  char *expr[] = {"test"};
+  const char *expr[] = {"test"};
   stats(&st, ranges, 2, expr, "ttest");
   assert_stats_equal(&st, &ans, 1);
 }
@@ -269,7 +269,7 @@ TEST(stats, multiple) {
                  .up_case = (uint[]){0, 1, 0},
                  .low_case = (uint[]){1, 0, 0},
                  .dotfile = &(bool[]){false}};
-  char *expr[] = {"Test", "ro/a"};
+  const char *expr[] = {"Test", "ro/a"};
   stats(&st, ranges, 6, expr, "ttest/p/Ro/afgd");
   assert_stats_equal(&st, &ans, 3);
 }

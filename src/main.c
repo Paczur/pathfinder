@@ -173,8 +173,7 @@ CONST static bool de_useless(const struct dirent *de) {
 }
 
 static int filter_add(const char *restrict path, const struct dirent *de,
-                      uint *ranges, const char *restrict const *expr, uint len,
-                      uint count) {
+                      const char *restrict const *expr, uint len, uint count) {
   struct stat lstats;
   uchar type = 0;
   if(type_filter != TYPE_FILTER_ALL) {
@@ -225,7 +224,7 @@ static void file_paths(const char *const *expr, uint len, uint count) {
     for(uint i = 0; i < line_len && i < line_size - 1; i++) {
       if(line[i] == '\n') {
         line[i] = 0;
-        filter_add(line, NULL, ranges, expr, len, count);
+        filter_add(line, NULL, expr, len, count);
       }
     }
   }
@@ -275,7 +274,7 @@ static void dfs_paths(const char *const *expr, uint len, uint count) {
       new_null = stpcpy(dir + null_stack[stack_i], de->d_name) - dir;
     }
 
-    ret = filter_add(dir, de, ranges, expr, len, count);
+    ret = filter_add(dir, de, expr, len, count);
     if(ret == -1) continue;
     if(ret == 1) stated = true;
 

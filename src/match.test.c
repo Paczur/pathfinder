@@ -43,27 +43,27 @@ TEST(node_matches, expr_shorter_than_path) {
   TEST(matches, name) {                             \
     uint res[] = {__VA_ARGS__};                     \
     uint range[LENGTH(res)];                        \
-    char *e[] = {expr};                             \
+    const char *e[] = {expr};                       \
     assert_true(matches(range, str, e, 1, count));  \
     assert_memory_equal(range, res, sizeof(range)); \
   }
 #define TEST_NOT_MATCHES(name, str, count, ...)            \
   TEST(matches, name) {                                    \
-    char *e[] = {__VA_ARGS__};                             \
+    const char *e[] = {__VA_ARGS__};                       \
     assert_false(matches(NULL, str, e, LENGTH(e), count)); \
   }
 
 TEST(matches, space_direct) {
   uint res[] = {0, 1, 9, 10};
   uint range[LENGTH(res)];
-  char *expr[] = {"p", "r"};
+  const char *expr[] = {"p", "r"};
   assert_true(matches(range, "projects/real", expr, LENGTH(expr), 2));
   assert_memory_equal(range, res, sizeof(range));
 }
 TEST(matches, space_indirect) {
   uint res[] = {0, 1, 12, 13};
   uint range[LENGTH(res)];
-  char *expr[] = {"p", "r"};
+  const char *expr[] = {"p", "r"};
   assert_true(matches(range, "projects/no/real", expr, LENGTH(expr), 2));
   assert_memory_equal(range, res, sizeof(range));
 }
@@ -73,14 +73,14 @@ TEST_MATCHES(absolute, "/rp", "/p", 1, 2, 3)
 TEST(matches, absolute_middle) {
   uint res[] = {2, 3, 6, 7};
   uint range[LENGTH(res)];
-  char *e[] = {"/p", "s"};
+  const char *e[] = {"/p", "s"};
   assert_true(matches(range, "/rp/test", e, 2, 2));
   assert_memory_equal(range, res, sizeof(range));
 }
 TEST(matches, absolute_space) {
   uint res[] = {0, 1, 6, 7};
   uint range[LENGTH(res)];
-  char *e[] = {"/", "p"};
+  const char *e[] = {"/", "p"};
   assert_true(matches(range, "/test/pro", e, 2, 2));
   assert_memory_equal(range, res, sizeof(range));
 }
