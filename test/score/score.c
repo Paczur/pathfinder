@@ -1,5 +1,5 @@
 #include "score.h"
-#include <score/score.c>
+#include <score/score.h>
 
 CTF_TEST(test_score_depth) {
   stats_t stats1 = STATS_INIT(1);

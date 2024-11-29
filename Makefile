@@ -60,7 +60,7 @@ $(TEST_RUN): bin/$(TEST_BIN)
 	./$<
 	touch $@
 
-bin/$(TEST_BIN): $(TEST_OBJECTS) | build/test/$(TEST_BIN).lf
+bin/$(TEST_BIN): $(TEST_OBJECTS) $(filter-out build/src/main.o, $(SRC_OBJECTS)) | build/test/$(TEST_BIN).lf
 	mkdir -p $(@D)
 	$(info LN  $@)
 	$(CC) $(LINK_FLAGS) $(TEST_FLAGS) `cat $|` -o $@ $^

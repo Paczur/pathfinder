@@ -1,5 +1,5 @@
 #include "res.h"
-#include <res/res.c>
+#include <res/res.h>
 
 CTF_TEST(resa_add_empty) {
   resa_t arr = RESA_INIT(1);
