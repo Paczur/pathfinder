@@ -14,15 +14,15 @@ typedef struct stats_t {
   uint *low_case;
   bool *dotfile;
 } stats_t;
-#define STATS_INIT(size)               \
-  {                                    \
-    .dirname_start = &(uint[size]){0}, \
-    .dirname_end = &(uint[size]){0},   \
-    .word_start = &(uint[size]){0},    \
-    .word_end = &(uint[size]){0},      \
-    .low_case = &(uint[size]){0},      \
-    .up_case = &(uint[size]){0},       \
-    .dotfile = &(bool[size]){0},       \
+#define STATS_INIT(size)              \
+  {                                   \
+    .dirname_start = (uint[size]){0}, \
+    .dirname_end = (uint[size]){0},   \
+    .word_start = (uint[size]){0},    \
+    .word_end = (uint[size]){0},      \
+    .low_case = (uint[size]){0},      \
+    .up_case = (uint[size]){0},       \
+    .dotfile = (bool[size]){0},       \
   }
 void stats(stats_t *stats, uint *node_is, uint nodesl,
            const char *restrict const *expr, const char *restrict str);

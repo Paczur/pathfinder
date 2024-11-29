@@ -63,6 +63,7 @@ $(TEST_RUN): bin/$(TEST_BIN)
 bin/$(TEST_BIN): $(TEST_OBJECTS) | build/test/$(TEST_BIN).lf
 	mkdir -p $(@D)
 	$(info LN  $@)
+	$(info $^)
 	$(CC) $(LINK_FLAGS) $(TEST_FLAGS) `cat $|` -o $@ $^
 
 build/test/$(TEST_BIN).lf: $(TESTS)

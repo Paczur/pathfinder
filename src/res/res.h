@@ -27,7 +27,7 @@ void resn_alloc(resn_t *node, size_t len, size_t count);
 void resn_free(resn_t *node);
 void resn_print(const resn_t *node, uint count);
 
-#define RESA_INIT(lim) {.arr = &(resv_t[lim]){{0}}, .capacity = lim}
+#define RESA_INIT(lim) {.arr = (resv_t[lim]){{0}}, .capacity = lim}
 typedef struct resa_t {
   uint capacity;
   uint size;

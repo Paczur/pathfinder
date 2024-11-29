@@ -1,27 +1,29 @@
-#include <match/match.h>
-#include <ctf/ctf.h>
+#include "match.h"
+#include <match/match.c>
 
-TEST(letter, a) { assert_true(letter('a')); }
-TEST(letter, z) { assert_true(letter('z')); }
-TEST(letter, A) { assert_true(letter('A')); }
-TEST(letter, Z) { assert_true(letter('Z')); }
-TEST(letter, number) { assert_false(letter('1')); }
-TEST(letter, between_lower_and_upper) { assert_false(letter('^')); }
+#define LENGTH(a) (sizeof(a) / sizeof(*(a)))
 
-TEST(uppercase, exact) { assert_int_equal(uppercase('A'), 'A'); }
-TEST(uppercase, lower) { assert_int_equal(uppercase('a'), 'A'); }
+CTF_TEST(letter_z) { expect_true(letter('z')); }
+CTF_TEST(letter_a) { expect_true(letter('a')); }
+CTF_TEST(letter_A) { expect_true(letter('A')); }
+CTF_TEST(letter_Z) { expect_true(letter('Z')); }
+CTF_TEST(letter_number) { expect_false(letter('1')); }
+CTF_TEST(letter_between_lower_and_upper) { expect_false(letter('^')); }
 
-TEST(equal, exact) { assert_true(equal('a', 'a')); }
-TEST(equal, lower) { assert_true(equal('A', 'a')); }
-TEST(equal, upper) { assert_true(equal('a', 'A')); }
-TEST(equal, symbol) { assert_false(equal('~', '^')); }
+CTF_TEST(uppercase_exact) { expect_int_eq(uppercase('A'), 'A'); }
+CTF_TEST(uppercase_lower) { expect_int_eq(uppercase('a'), 'A'); }
 
-#define TEST_NODE_MATCHES(name, str, expr, ...)     \
-  TEST(node_matches, name) {                        \
-    uint res[] = {__VA_ARGS__};                     \
-    uint range[LENGTH(res)];                        \
-    assert_true(node_matches(range, str, expr));    \
-    assert_memory_equal(range, res, sizeof(range)); \
+CTF_TEST(equal_exact) { expect_true(equal('a', 'a')); }
+CTF_TEST(equal_lower) { expect_true(equal('A', 'a')); }
+CTF_TEST(equal_upper) { expect_true(equal('a', 'A')); }
+CTF_TEST(equal_symbol) { expect_false(equal('~', '^')); }
+
+#define TEST_NODE_MATCHES(name, str, expr, ...)  \
+  CTF_TEST(node_matches_##name) {                \
+    uint res[] = {__VA_ARGS__};                  \
+    uint range[LENGTH(res)];                     \
+    expect_true(node_matches(range, str, expr)); \
+    expect_array_uint_eq(range, res);            \
   }
 TEST_NODE_MATCHES(prefix, "epr", "pr", 1, 3)
 TEST_NODE_MATCHES(suffix, "epr", "pr", 1, 3)
@@ -32,57 +34,57 @@ TEST_NODE_MATCHES(case, "PR", "pr", 0, 2);
 TEST_NODE_MATCHES(slash, "pr", "pr/test", 0, 2)
 TEST_NODE_MATCHES(empty, "pr", "", 1, 1)
 TEST_NODE_MATCHES(space, "pr test", "pr t", 0, 4)
-TEST(node_matches, space_false) {
-  assert_false(node_matches(NULL, "pr", "pr test"));
+CTF_TEST(node_matches_space_false) {
+  expect_false(node_matches(NULL, "pr", "pr test"));
 }
-TEST(node_matches, expr_shorter_than_path) {
-  assert_false(node_matches(NULL, "path", "s"));
+CTF_TEST(node_matches_expr_shorter_than_path) {
+  expect_false(node_matches(NULL, "path", "s"));
 }
 
-#define TEST_MATCHES(name, str, expr, count, ...)   \
-  TEST(matches, name) {                             \
-    uint res[] = {__VA_ARGS__};                     \
-    uint range[LENGTH(res)];                        \
-    const char *e[] = {expr};                       \
-    assert_true(matches(range, str, e, 1, count));  \
-    assert_memory_equal(range, res, sizeof(range)); \
+#define TEST_MATCHES(name, str, expr, count, ...)  \
+  CTF_TEST(matches_##name) {                       \
+    uint res[] = {__VA_ARGS__};                    \
+    uint range[LENGTH(res)];                       \
+    const char *e[] = {expr};                      \
+    expect_true(matches(range, str, e, 1, count)); \
+    expect_array_uint_eq(range, res);              \
   }
 #define TEST_NOT_MATCHES(name, str, count, ...)            \
-  TEST(matches, name) {                                    \
+  CTF_TEST(matches_##name) {                               \
     const char *e[] = {__VA_ARGS__};                       \
-    assert_false(matches(NULL, str, e, LENGTH(e), count)); \
+    expect_false(matches(NULL, str, e, LENGTH(e), count)); \
   }
 
-TEST(matches, space_direct) {
+CTF_TEST(matches_space_direct) {
   uint res[] = {0, 1, 9, 10};
   uint range[LENGTH(res)];
   const char *expr[] = {"p", "r"};
-  assert_true(matches(range, "projects/real", expr, LENGTH(expr), 2));
-  assert_memory_equal(range, res, sizeof(range));
+  expect_true(matches(range, "projects/real", expr, LENGTH(expr), 2));
+  expect_array_uint_eq(range, res);
 }
-TEST(matches, space_indirect) {
+CTF_TEST(matches_space_indirect) {
   uint res[] = {0, 1, 12, 13};
   uint range[LENGTH(res)];
   const char *expr[] = {"p", "r"};
-  assert_true(matches(range, "projects/no/real", expr, LENGTH(expr), 2));
-  assert_memory_equal(range, res, sizeof(range));
+  expect_true(matches(range, "projects/no/real", expr, LENGTH(expr), 2));
+  expect_array_uint_eq(range, res);
 }
 TEST_MATCHES(slash, "projects/real", "p/r", 2, 0, 1, 9, 10)
 TEST_MATCHES(middle, "project", "e", 1, 4, 5)
 TEST_MATCHES(absolute, "/rp", "/p", 1, 2, 3)
-TEST(matches, absolute_middle) {
+CTF_TEST(matches_absolute_middle) {
   uint res[] = {2, 3, 6, 7};
   uint range[LENGTH(res)];
   const char *e[] = {"/p", "s"};
-  assert_true(matches(range, "/rp/test", e, 2, 2));
-  assert_memory_equal(range, res, sizeof(range));
+  expect_true(matches(range, "/rp/test", e, 2, 2));
+  expect_array_uint_eq(range, res);
 }
-TEST(matches, absolute_space) {
+CTF_TEST(matches_absolute_space) {
   uint res[] = {0, 1, 6, 7};
   uint range[LENGTH(res)];
   const char *e[] = {"/", "p"};
-  assert_true(matches(range, "/test/pro", e, 2, 2));
-  assert_memory_equal(range, res, sizeof(range));
+  expect_true(matches(range, "/test/pro", e, 2, 2));
+  expect_array_uint_eq(range, res);
 }
 TEST_MATCHES(second, "test/project", "p", 1, 5, 6)
 TEST_MATCHES(skip_one, "projects/lol/test", "p//t", 3, 0, 1, 11, 11, 13, 14)
@@ -97,49 +99,46 @@ TEST_NOT_MATCHES(absolute_relative, "pr", 1, "/p")
 TEST_NOT_MATCHES(absolute_indirect, "/test/pro", 1, "/p")
 TEST_NOT_MATCHES(slash_false, "projects/no", 2, "p/r")
 
-int main(void) {
-  const struct CMUnitTest tests[] = {
-    ADD(letter, a),
-    ADD(letter, A),
-    ADD(letter, between_lower_and_upper),
-    ADD(letter, number),
-    ADD(letter, z),
-    ADD(letter, Z),
-    ADD(uppercase, exact),
-    ADD(uppercase, lower),
-    ADD(equal, exact),
-    ADD(equal, lower),
-    ADD(equal, symbol),
-    ADD(equal, upper),
-    ADD(node_matches, case),
-    ADD(node_matches, empty),
-    ADD(node_matches, exact),
-    ADD(node_matches, expr_shorter_than_path),
-    ADD(node_matches, infix),
-    ADD(node_matches, prefix),
-    ADD(node_matches, prefix_repetition),
-    ADD(node_matches, slash),
-    ADD(node_matches, space),
-    ADD(node_matches, space_false),
-    ADD(node_matches, suffix),
-    ADD(matches, absolute),
-    ADD(matches, absolute_false),
-    ADD(matches, absolute_indirect),
-    ADD(matches, absolute_middle),
-    ADD(matches, absolute_relative),
-    ADD(matches, absolute_space),
-    ADD(matches, always_skips),
-    ADD(matches, first_false),
-    ADD(matches, longer_path),
-    ADD(matches, expr_left),
-    ADD(matches, middle),
-    ADD(matches, second),
-    ADD(matches, skip_one),
-    ADD(matches, slash),
-    ADD(matches, slash_false),
-    ADD(matches, space_direct),
-    ADD(matches, space_false),
-    ADD(matches, space_indirect),
-  };
-  return cmocka_run_group_tests(tests, NULL, NULL);
-}
+CTF_GROUP(match_group) = {
+  letter_a,
+  letter_A,
+  letter_between_lower_and_upper,
+  letter_number,
+  letter_z,
+  letter_Z,
+  uppercase_exact,
+  uppercase_lower,
+  equal_exact,
+  equal_lower,
+  equal_symbol,
+  equal_upper,
+  node_matches_case,
+  node_matches_empty,
+  node_matches_exact,
+  node_matches_expr_shorter_than_path,
+  node_matches_infix,
+  node_matches_prefix,
+  node_matches_prefix_repetition,
+  node_matches_slash,
+  node_matches_space,
+  node_matches_space_false,
+  node_matches_suffix,
+  matches_absolute,
+  matches_absolute_false,
+  matches_absolute_indirect,
+  matches_absolute_middle,
+  matches_absolute_relative,
+  matches_absolute_space,
+  matches_always_skips,
+  matches_first_false,
+  matches_longer_path,
+  matches_expr_left,
+  matches_middle,
+  matches_second,
+  matches_skip_one,
+  matches_slash,
+  matches_slash_false,
+  matches_space_direct,
+  matches_space_false,
+  matches_space_indirect,
+};
