@@ -1,5 +1,5 @@
 #include "stats.h"
-#include "match.h"
+#include "../match/match.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>

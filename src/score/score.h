@@ -1,8 +1,8 @@
 #ifndef H_SCORE
 #define H_SCORE
 
-#include "types.h"
-#include "stats.h"
+#include "../types.h"
+#include "../stats/stats.h"
 #include <limits.h>
 
 #define SCORE_BASE UINT_MAX

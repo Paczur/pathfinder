@@ -1,8 +1,8 @@
 #ifndef H_RES
 #define H_RES
 
-#include "types.h"
-#include "stats.h"
+#include "../types.h"
+#include "../stats/stats.h"
 
 typedef struct resv_t {
   char *path;

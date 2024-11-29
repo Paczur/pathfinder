@@ -1,78 +1,85 @@
-BIN=bin
-BUILD=build
-TEST_DIR=bin/tests
-DIRS=$(BIN) $(BUILD)
-SRC=src
+rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
 
-WARN_NO_ERROR=-Wno-error=cpp -Wno-error=suggest-attribute=const -Wno-error=suggest-attribute=pure -Wno-error=unused-variable -Wno-error=unused-function
-WARN= -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Walloca -Wbad-function-cast -Wcast-align=strict -Wcast-qual -Wduplicated-branches -Wduplicated-cond -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-prototypes -Wmultichar -Wnested-externs -Wnull-dereference -Woverlength-strings -Wpointer-arith -Wredundant-decls -Wsuggest-attribute=pure -Wsuggest-attribute=const -Wsuggest-attribute=noreturn -Wwrite-strings $(WARN_NO_ERROR)
-NO_WARN_TESTS=-Wno-unused-parameter -Wno-incompatible-pointer-types -Wno-unused-but-set-parameter
-MEMORY_DEBUG=-fsanitize=address -fsanitize=pointer-compare -fsanitize=pointer-subtract
-DEBUG=$(MEMORY_DEBUG) -Og -ggdb3  -fsanitize=undefined -fsanitize-address-use-after-scope -fstack-check -fno-stack-clash-protection
-RELEASE=-march=native -O2 -s -pipe -flto=4 -fwhole-program -D NDEBUG
-DIST=-march=x86-64-v2 -O2 -s -pipe -flto=4 -fwhole-program -D NDEBUG
-TEST_LIBS=$(shell pkg-config --cflags --libs cmocka)
-CFLAGS=$(WARN) -march=native -std=gnu99
-TESTS=$(wildcard $(SRC)/*.test.c $(SRC)/**/*.test.c)
-BIN_TESTS=$(patsubst $(SRC)/%.test.c, $(TEST_DIR)/%.test,$(TESTS))
-SOURCES=$(filter-out $(TESTS), $(wildcard $(SRC)/*.c $(SRC)/**/*.c))
-OBJECTS=$(patsubst $(SRC)/%.c,$(BUILD)/%.o,$(SOURCES))
-DEPENDS=$(patsubst $(SRC)/%.c,$(BUILD)/%.d,$(SOURCES))
+SOURCES=$(call rwildcard,src,*.c)
+TESTS=$(call rwildcard,test,*.c)
+LINKER_FLAGS=$(patsubst %.c, build/%.lf, $(TESTS))
+EXAMPLES=$(call rwildcard,example,*.c)
+SRC_OBJECTS=$(patsubst %.c, build/%.o, $(SOURCES))
+TEST_OBJECTS=$(patsubst %.c, build/%.o, $(TESTS))
+EXAMPLE_OBJECTS=$(patsubst %.c, build/%.o, $(EXAMPLES))
+EXAMPLE_BINARIES=$(patsubst %.c, bin/%, $(EXAMPLES))
+DEPENDENCIES=$(patsubst %.c, build/%.d, $(SOURCES)$(TESTS)$(EXAMPLES))
+TEST_BIN=tests
+TEST_RUN=build/$(TEST_BIN).run
+
+MEMORY_DEBUG_FLAGS=-fsanitize=address -fsanitize=pointer-compare -fsanitize=pointer-subtract
+WARN_FLAGS=-Wall -Wextra -Werror -Wno-error=cpp -Wno-unused-function -Wunused-result -Wvla -Wshadow -Wstrict-prototypes -Wno-maybe-uninitialized -Wno-logical-not-parentheses
+SANTIIZER_FLAGS=-fsanitize=undefined -fsanitize-address-use-after-scope -fstack-check -fno-stack-clash-protection
+DEBUG_FLAGS=$(WARN_FLAGS) $(MEMORY_DEBUG_FLAGS) $(SANITIZER_FLAGS) -Og -ggdb3 -MMD -MP
+OPTIMIZE_FLAGS=-march=x86-64-v3 -O2 -pipe -D NDEBUG
+LINK_FLAGS=$(BASE_CFLAGS) -s -flto=4 -fwhole-program
+TEST_FLAGS=$(CFLAGS) -Isrc -lctf
+BASE_CFLAGS=-std=gnu11
+CFLAGS=$(BASE_CFLAGS)
 
 all: release
 
-$(shell mkdir -p $(dir $(DEPENDS)))
--include $(DEPENDS)
-
-.PHONY: all install uninstall release debug clean check binaries tests
-MAKEFLAGS := --jobs=$(shell nproc)
-MAKEFLAGS += --output-sync=target
-$(VERBOSE).SILENT:
-
 install: binaries
-	cp $(BIN)/pf /usr/bin
+	cp bin/pf /usr/bin
 
 uninstall:
 	rm /usr/bin/pf
 
-release: CFLAGS += $(RELEASE)
-release: binaries
+release: CFLAGS += $(OPTIMIZE_FLAGS)
+release: bin/pf
 
-debug: CFLAGS += $(DEBUG)
-debug: tests binaries
+debug: CFLAGS += $(DEBUG_FLAGS)
+debug: $(TEST_RUN) bin/pf
 
-dist: CFLAGS += $(DIST)
-dist: binaries
-
-tests: CFLAGS += $(TEST_LIBS)
-tests: $(BIN_TESTS)
-
-check: tests
-check:
-	for bin in $(BIN_TESTS); do \
-		./$$bin; \
-	done \
+check: $(TEST_RUN)
 
 clean:
-	rm -rf $(BIN) $(BUILD) $(CCACHE_DIR)
+	rm -rf bin build
 
-binaries: $(BIN)/pf | $(BIN)
+MAKEFLAGS += --no-builtin-rules
+.SUFFIXES:
+.DELETE_ON_ERROR:
+.PHONY: all release debug check clean dist install uninstall
+$(VERBOSE).SILENT:
+$(shell mkdir -p $(dir $(DEPENDENCIES)))
+-include $(DEPENDENCIES)
 
-$(BIN)/pf: $(OBJECTS) | $(BIN)
-	$(CC) $(CFLAGS) -MMD -MP -o $@ $^
+bin/pf: $(SRC_OBJECTS)
+	mkdir -p $(@D)
+	$(info LNK $@)
+	$(CC) $(LINK_FLAGS) $(CFLAGS) -o $@ $^
 
-$(TEST_DIR)/%.test: $(SRC)/%.test.c $(SRC)/%.c | $(TEST_DIR)
-	$(CC) $(CFLAGS) $(NO_WARN_TESTS) -o $@ $<
-	./$@
+$(TEST_RUN): bin/$(TEST_BIN)
+	mkdir -p $(@D)
+	$(info RUN $<)
+	./$<
+	touch $@
 
-$(BUILD)/%.o: $(SRC)/%.c | $(BUILD)
-	$(CC) $(CFLAGS) -MMD -MP -c -o $@ $<
+bin/$(TEST_BIN): $(TEST_OBJECTS) | build/test/$(TEST_BIN).lf
+	mkdir -p $(@D)
+	$(info LN  $@)
+	$(CC) $(LINK_FLAGS) $(TEST_FLAGS) `cat $|` -o $@ $^
 
-$(BIN):
-	mkdir -p $(BIN)
+build/test/$(TEST_BIN).lf: $(TESTS)
+	$(info FLG $@)
+	grep -h '^\s*\(CTF_\)\?MOCK(' $^ | sed 's/\s*\(CTF_\)\?MOCK([^,]\+,\s*\([^ ,]\+\)\s*,.*/,--wrap=\2/' | sort | uniq | tr -d '\n' | sed 's/^,/-Wl,/' > $@
 
-$(BUILD):
-	mkdir -p $(dir $(OBJECTS)) $(dir $(DEPENDS))
+build/test/%.o: test/%.c
+	mkdir -p $(@D)
+	$(info CC  $@)
+	$(CC) $(TEST_FLAGS) -c -o $@ $<
 
-$(TEST_DIR):
-	mkdir -p $(TEST_DIR)/$(subst $(SRC)/,,$(dir $(TESTS)))
+build/test/main.o: test/main.c
+	mkdir -p $(@D)
+	$(info CC  $@)
+	$(CC) $(TEST_FLAGS) -c -o $@ $<
+
+build/src/%.o: src/%.c
+	mkdir -p $(@D)
+	$(info CC  $@)
+	$(CC) $(CFLAGS) -c -o $@ $<

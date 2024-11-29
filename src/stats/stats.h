@@ -1,7 +1,7 @@
 #ifndef H_STAT
 #define H_STAT
 
-#include "types.h"
+#include "../types.h"
 
 typedef struct stats_t {
   uint depth;
@@ -31,3 +31,4 @@ void stats_free(stats_t *stats);
 void stats_print(const stats_t *stats, uint count);
 
 #endif
+

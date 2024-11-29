@@ -1,5 +1,5 @@
-#include "match.c"
-#include "test.h"
+#include <match/match.h>
+#include <ctf/ctf.h>
 
 TEST(letter, a) { assert_true(letter('a')); }
 TEST(letter, z) { assert_true(letter('z')); }

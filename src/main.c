@@ -1,7 +1,7 @@
-#include "match.h"
-#include "res.h"
-#include "score.h"
-#include "stats.h"
+#include "match/match.h"
+#include "res/res.h"
+#include "score/score.h"
+#include "stats/stats.h"
 #include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
