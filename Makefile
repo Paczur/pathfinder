@@ -24,7 +24,7 @@ CFLAGS=$(BASE_CFLAGS)
 
 all: release
 
-install: binaries
+install: bin/pf
 	cp bin/pf /usr/bin
 
 uninstall:
@@ -63,7 +63,6 @@ $(TEST_RUN): bin/$(TEST_BIN)
 bin/$(TEST_BIN): $(TEST_OBJECTS) | build/test/$(TEST_BIN).lf
 	mkdir -p $(@D)
 	$(info LN  $@)
-	$(info $^)
 	$(CC) $(LINK_FLAGS) $(TEST_FLAGS) `cat $|` -o $@ $^
 
 build/test/$(TEST_BIN).lf: $(TESTS)
