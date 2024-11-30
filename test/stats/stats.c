@@ -1,22 +1,22 @@
 #include "stats.h"
 #include <stats/stats.h>
+#include "../mocks/mocks.h"
+#include "../fakes/malloc.h"
+
+static void expect_stats_valid(const stats_t *stats) {
+  expect_non_null(stats->dirname_start);
+  expect_non_null(stats->dirname_end);
+  expect_non_null(stats->word_start);
+  expect_non_null(stats->word_end);
+  expect_non_null(stats->up_case);
+  expect_non_null(stats->low_case);
+  assert_fold(6, "stats valid");
+}
 
 static void expect_stats_eq(const stats_t *x, const stats_t *y, uint count) {
-  expect_non_null(x->dirname_start);
-  expect_non_null(y->dirname_start);
-  expect_non_null(x->dirname_end);
-  expect_non_null(y->dirname_end);
-  expect_non_null(x->word_start);
-  expect_non_null(y->word_start);
-  expect_non_null(x->word_end);
-  expect_non_null(y->word_end);
-  expect_non_null(x->up_case);
-  expect_non_null(y->up_case);
-  expect_non_null(x->low_case);
-  expect_non_null(y->low_case);
-  expect_uint_neq(x->depth, 0);
-  expect_uint_neq(y->depth, 0);
-  expect_uint_eq(x->depth, y->depth);
+  expect_stats_valid(x);
+  expect_stats_valid(y);
+  assert_barrier();
   expect_memory_uint_eq(x->dirname_start, y->dirname_start, count);
   expect_memory_uint_eq(x->dirname_end, y->dirname_end, count);
   expect_memory_uint_eq(x->word_start, y->word_start, count);
@@ -24,6 +24,21 @@ static void expect_stats_eq(const stats_t *x, const stats_t *y, uint count) {
   expect_memory_uint_eq(x->up_case, y->up_case, count);
   expect_memory_uint_eq(x->low_case, y->low_case, count);
   expect_memory_int_eq(x->dotfile, y->dotfile, count);
+  expect_uint_eq(x->depth, y->depth);
+}
+
+CTF_TEST(stats_alloc_free) {
+  stats_t stats;
+  uint node_count = 3;
+  mock_group(fake_alloc);
+  mock_expect_uint_eq(
+    malloc, size, node_count * 6 * sizeof(uint) + node_count * sizeof(bool));
+  stats_alloc(&stats, node_count);
+  expect_stats_valid(&stats);
+  expect_uint_eq(1, fake_alloc_count());
+  mock_expect_ptr_eq(free, ptr, stats.dirname_start);
+  stats_free(&stats);
+  expect_uint_eq(0, fake_alloc_clear());
 }
 
 CTF_TEST(stats_single) {
@@ -59,6 +74,7 @@ CTF_TEST(stats_multiple) {
 }
 
 CTF_GROUP(stats_group) = {
+  stats_alloc_free,
   stats_single,
   stats_multiple,
 };

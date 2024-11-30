@@ -1,5 +1,7 @@
 #include "res.h"
 #include <res/res.h>
+#include "../fakes/malloc.h"
+#include "../mocks/mocks.h"
 
 CTF_TEST(resa_add_empty) {
   resa_t arr = RESA_INIT(1);
@@ -62,6 +64,17 @@ CTF_TEST(resa_add_full_lower) {
   resa_add(&arr, &val2);
   resa_add(&arr, &val1);
   expect_uint_eq(arr.arr[0].score, 2);
+}
+
+CTF_TEST(resa_alloc_free) {
+  resa_t arr = {.capacity = 3};
+  mock_group(fake_alloc);
+  mock_expect_uint_eq(malloc, size, arr.capacity * sizeof(arr.arr[0]));
+  resa_alloc(&arr);
+  expect_uint_eq(1, fake_alloc_count());
+  mock_expect_ptr_eq(free, ptr, arr.arr);
+  resa_free(&arr);
+  expect_uint_eq(0, fake_alloc_clear());
 }
 
 CTF_TEST(resl_add_empty_head) {
@@ -139,6 +152,6 @@ CTF_GROUP(res_group) = {
   resa_add_score_middle, resa_add_full_higher,  resa_add_full_lower,
   resl_add_empty_tail,   resl_add_empty_head,   resl_add_second_next,
   resl_add_second_tail,  resl_add_score_higher, resl_add_score_lower,
-  resl_add_score_middle,
+  resl_add_score_middle, resa_alloc_free,
 };
 

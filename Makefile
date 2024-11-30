@@ -67,7 +67,7 @@ bin/$(TEST_BIN): $(TEST_OBJECTS) $(filter-out build/src/main.o, $(SRC_OBJECTS)) 
 
 build/test/$(TEST_BIN).lf: $(TESTS)
 	$(info FLG $@)
-	grep -h '^\s*\(CTF_\)\?MOCK(' $^ | sed 's/\s*\(CTF_\)\?MOCK([^,]\+,\s*\([^ ,]\+\)\s*,.*/,--wrap=\2/' | sort | uniq | tr -d '\n' | sed 's/^,/-Wl,/' > $@
+	$(SHELL) ./scripts/wraps $^ > $@
 
 build/test/%.o: test/%.c
 	mkdir -p $(@D)

@@ -179,24 +179,17 @@ static void dotfile(const uint *ranges, uint rangesl, bool *ret,
 
 void stats_alloc(stats_t *stats, uint node_count) {
   stats->depth = 0;
-  stats->dirname_start = malloc(node_count * sizeof(uint));
-  stats->dirname_end = malloc(node_count * sizeof(uint));
-  stats->word_start = malloc(node_count * sizeof(uint));
-  stats->word_end = malloc(node_count * sizeof(uint));
-  stats->up_case = malloc(node_count * sizeof(uint));
-  stats->low_case = malloc(node_count * sizeof(uint));
-  stats->dotfile = malloc(node_count * sizeof(bool));
+  stats->dirname_start =
+    malloc(node_count * 6 * sizeof(uint) + node_count * sizeof(bool));
+  stats->dirname_end = stats->dirname_start + node_count * sizeof(uint);
+  stats->word_start = stats->dirname_end + node_count * sizeof(uint);
+  stats->word_end = stats->word_start + node_count * sizeof(uint);
+  stats->up_case = stats->word_end + node_count * sizeof(uint);
+  stats->low_case = stats->up_case + node_count * sizeof(uint);
+  stats->dotfile = (bool *)stats->low_case + node_count * sizeof(uint);
 }
 
-void stats_free(stats_t *stats) {
-  free(stats->dirname_start);
-  free(stats->dirname_end);
-  free(stats->word_start);
-  free(stats->word_end);
-  free(stats->up_case);
-  free(stats->low_case);
-  free(stats->dotfile);
-}
+void stats_free(stats_t *stats) { free(stats->dirname_start); }
 
 void stats_print(const stats_t *stats, uint count) {
   printf("{depth: %u, dirname_start: [", stats->depth);
