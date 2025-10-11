@@ -45,6 +45,5 @@ make && sudo make install
 ```
 
 ### Dependencies
-Tests require cmocka.
 Release build requires only stdlib.
 Tested with GCC.
